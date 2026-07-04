@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Práctica Mental</title>
+<style>
+  :root{
+    --bg:#f7f8fb;--panel:#ffffff;--panel-2:#f1f3f8;--line:#e3e7ef;
+    --ink:#1f2633;--ink-dim:#8a93a6;--accent:#5b6ee1;--accent-ink:#ffffff;
+    --wrong:#e0555f;--right:#3fae87;--gold:#c48a2a;
+    --num:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;justify-content:center;padding:16px;min-height:100vh}
+  .app{width:100%;max-width:440px;display:flex;flex-direction:column;gap:16px}
+  .brand{display:flex;align-items:baseline;justify-content:space-between}
+  .brand h1{font-size:15px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim)}
+  .brand .nav{display:flex;gap:14px}
+  .brand .nav button{background:none;border:none;color:var(--ink-dim);font-size:13px;cursor:pointer;font-weight:600;padding:0}
+  .brand .nav button.on{color:var(--accent)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .card h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:12px;font-weight:600}
+  .ops{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .op{background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:14px 12px;cursor:pointer;user-select:none;transition:.12s;display:flex;flex-direction:column;gap:3px}
+  .op:active{transform:scale(.97)}
+  .op .sym{font-family:var(--num);font-size:22px;font-weight:700;color:var(--ink)}
+  .op .lbl{font-size:12px;color:var(--ink-dim)}
+  .op.on{border-color:var(--accent);background:#eef0fc}
+  .op.on .sym,.op.on .lbl{color:var(--accent)}
+  .field{margin-top:16px}
+  .field label{display:block;font-size:12px;color:var(--ink-dim);margin-bottom:8px}
+  .stepper{display:flex;align-items:stretch;border:1px solid var(--line);border-radius:11px;overflow:hidden}
+  .stepper button{width:52px;background:var(--panel-2);color:var(--ink);border:none;font-size:24px;cursor:pointer;font-family:var(--num)}
+  .stepper button:active{background:#e3e7ef}
+  .stepper input{flex:1;background:transparent;border:none;color:var(--ink);text-align:center;font-family:var(--num);font-size:22px;font-weight:700;width:100%}
+  .stepper input:focus{outline:none}
+  .quick{display:flex;gap:8px;margin-top:10px}
+  .quick button{flex:1;background:var(--panel-2);border:1px solid var(--line);color:var(--ink-dim);border-radius:9px;padding:8px;font-family:var(--num);font-size:14px;cursor:pointer}
+  .quick button:active{background:#e3e7ef;color:var(--ink)}
+  .cfg{display:none}
+  .cfg.show{display:block}
+  .seg{display:flex;gap:8px}
+  .seg button{flex:1;background:var(--panel-2);border:1px solid var(--line);color:var(--ink-dim);border-radius:9px;padding:10px 4px;font-family:var(--num);font-size:13px;font-weight:600;cursor:pointer;transition:.12s}
+  .seg button:active{transform:scale(.97)}
+  .seg button.on{background:#eef0fc;border-color:var(--accent);color:var(--accent)}
+  .start{width:100%;background:var(--accent);color:var(--accent-ink);border:none;border-radius:12px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;letter-spacing:.02em;transition:.12s}
+  .start:active{transform:scale(.98)}
+  .start:disabled{opacity:.35;cursor:not-allowed}
+  .streaks{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .streak{background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:12px;text-align:center}
+  .streak .op-n{font-family:var(--num);font-size:14px;font-weight:700;color:var(--ink)}
+  .streak .k{font-size:10px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+  .streak .v{font-family:var(--num);font-size:24px;font-weight:700;color:var(--accent);margin-top:4px}
+  .streak .v.zero{color:var(--ink-dim)}
+  .streak .best{font-size:10px;color:var(--gold);font-family:var(--num);margin-top:3px}
+  .playtop{display:flex;justify-content:space-between;align-items:center;font-family:var(--num)}
+  .playtop .prog{font-size:14px;color:var(--ink-dim)}
+  .playtop .clock{font-size:14px;color:var(--ink)}
+  .playtop .quit{background:none;border:none;color:var(--ink-dim);font-size:20px;cursor:pointer;padding:0 6px}
+  .bar{height:4px;background:var(--panel-2);border-radius:99px;overflow:hidden}
+  .bar>div{height:100%;background:var(--accent);width:0;transition:width .25s}
+  .prob{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:30px 20px;text-align:center;position:relative}
+  .prob .live{position:absolute;top:12px;right:14px;font-family:var(--num);font-size:12px;color:var(--ink-dim)}
+  .prob .live b{color:var(--accent)}
+  .prob .q{font-family:var(--num);font-size:46px;font-weight:700;letter-spacing:.02em}
+  .prob .q.flash-ok{color:var(--right)}
+  .prob .q.flash-no{color:var(--wrong)}
+  .answer{width:100%;background:var(--panel-2);border:2px solid var(--line);border-radius:14px;color:var(--ink);text-align:center;font-family:var(--num);font-size:34px;font-weight:700;padding:16px}
+  .answer:focus{outline:none;border-color:var(--accent)}
+  .answer.bad{border-color:var(--wrong);animation:shake .3s}
+  @keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .pad button{background:var(--panel-2);border:1px solid var(--line);color:var(--ink);border-radius:11px;padding:16px 0;font-family:var(--num);font-size:22px;font-weight:600;cursor:pointer}
+  .pad button:active{background:#e3e7ef}
+  .pad .go{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+  .pad .del{color:var(--ink-dim)}
+  .res .big{text-align:center;padding:8px 0 4px}
+  .res .score{font-family:var(--num);font-size:52px;font-weight:700}
+  .res .score small{font-size:24px;color:var(--ink-dim)}
+  .res .sub{color:var(--ink-dim);font-size:13px;margin-top:2px}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+  .stat{background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:14px}
+  .stat .k{font-size:11px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.08em}
+  .stat .v{font-family:var(--num);font-size:26px;font-weight:700;margin-top:4px}
+  .review{margin-top:16px;display:flex;flex-direction:column;gap:7px;max-height:230px;overflow-y:auto}
+  .rev{display:flex;justify-content:space-between;align-items:center;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-family:var(--num);font-size:15px}
+  .rev.miss{border-color:#f1c9cc;background:#fdf1f2}
+  .rev .exp{color:var(--ink-dim)}
+  .rev .exp b{color:var(--ink)}
+  .rev .yours{color:var(--wrong);font-size:13px}
+  .rev .tick{color:var(--right)}
+  .rev .t{color:var(--ink-dim);font-size:12px}
+  .totrow{display:flex;flex-direction:column;gap:10px}
+  .grp{background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:12px 14px}
+  .grp-h{font-family:var(--num);font-size:13px;font-weight:700;color:var(--ink-dim);margin-bottom:8px}
+  .grp-cells{display:flex;gap:8px}
+  .gcell{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 4px}
+  .gcell .gl{font-family:var(--num);font-size:11px;color:var(--ink-dim)}
+  .gcell .gv{font-family:var(--num);font-size:20px;font-weight:700;color:var(--ink)}
+  .gcell .gv.z{color:var(--line)}
+  .dgrp{margin-top:8px}
+  .dgrp-h{font-family:var(--num);font-size:11px;color:var(--ink-dim);margin-bottom:4px}
+  .day{background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:13px 14px;margin-bottom:9px}
+  .day .dh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .day .dh .date{font-family:var(--num);font-size:14px;color:var(--ink);font-weight:600}
+  .day .dh .date.today{color:var(--accent)}
+  .day .dh .dtot{font-family:var(--num);font-size:12px;color:var(--ink-dim)}
+  .day .cells{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .day .cell{text-align:center}
+  .day .cell .cn{font-family:var(--num);font-size:11px;color:var(--ink-dim)}
+  .day .cell .cv{font-family:var(--num);font-size:18px;font-weight:700;color:var(--ink)}
+  .day .cell .cv.z{color:var(--line)}
+  .empty{color:var(--ink-dim);font-size:13px;text-align:center;padding:24px 0}
+  .danger{width:100%;background:none;border:1px solid #f1c9cc;color:var(--wrong);border-radius:11px;padding:12px;font-size:13px;cursor:pointer;margin-top:4px}
+  .danger:active{background:#fdf1f2}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="brand">
+    <h1>Práctica Mental</h1>
+    <div class="nav">
+      <button id="tabPractice" class="on">Practicar</button>
+      <button id="tabDash">Progreso</button>
+    </div>
+  </div>
+
+  <section id="setup">
+    <div class="card" style="margin-bottom:16px">
+      <h2>Operaciones</h2>
+      <div class="ops" id="ops">
+        <div class="op on" data-op="add"><span class="sym">+</span><span class="lbl">Sumas · 2 díg</span></div>
+        <div class="op" data-op="sub"><span class="sym">−</span><span class="lbl">Restas · 2 díg</span></div>
+        <div class="op" data-op="mul"><span class="sym">×</span><span class="lbl">Multiplicación</span></div>
+        <div class="op" data-op="mix"><span class="sym">±×</span><span class="lbl">Mixto</span></div>
+      </div>
+
+      <div class="field cfg" id="cfgAdd">
+        <label>Dificultad de sumas</label>
+        <div class="seg" data-cfg="add">
+          <button data-r="1" class="on">0–99</button>
+          <button data-r="2">100–499</button>
+          <button data-r="3">500–999</button>
+        </div>
+      </div>
+      <div class="field cfg" id="cfgSub">
+        <label>Dificultad de restas</label>
+        <div class="seg" data-cfg="sub">
+          <button data-r="1" class="on">0–99</button>
+          <button data-r="2">100–499</button>
+          <button data-r="3">500–999</button>
+        </div>
+      </div>
+      <div class="field cfg" id="cfgMul">
+        <label>Formato de multiplicación</label>
+        <div class="seg" data-cfg="mul">
+          <button data-r="1" class="on">1 × 1 díg</button>
+          <button data-r="2">2 × 1 díg</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>¿Cuántos ejercicios?</label>
+        <div class="stepper">
+          <button id="minus">−</button>
+          <input id="count" type="number" inputmode="numeric" value="10" min="1" max="200">
+          <button id="plus">+</button>
+        </div>
+        <div class="quick">
+          <button data-n="10">10</button><button data-n="20">20</button>
+          <button data-n="40">40</button><button data-n="100">100</button>
+        </div>
+      </div>
+    </div>
+    <button class="start" id="startBtn">Empezar</button>
+  </section>
+
+  <section id="play" class="hidden">
+    <div class="playtop">
+      <span class="prog" id="prog">1 / 10</span>
+      <span class="clock" id="clock">0.0s</span>
+      <button class="quit" id="quit">✕</button>
+    </div>
+    <div class="bar"><div id="barFill"></div></div>
+    <div class="prob">
+      <div class="live" id="live"></div>
+      <div class="q" id="qText">— + —</div>
+    </div>
+    <input class="answer" id="answer" inputmode="numeric" placeholder="?" readonly>
+    <div class="pad">
+      <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+      <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+      <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+      <button class="del" data-k="del">⌫</button><button data-k="0">0</button><button class="go" data-k="go">↵</button>
+    </div>
+  </section>
+
+  <section id="results" class="hidden">
+    <div class="card res">
+      <div class="big">
+        <div class="score"><span id="rCorrect">0</span><small>/<span id="rTotal">0</span></small></div>
+        <div class="sub" id="rSub">correctos</div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="k">Tiempo total</div><div class="v" id="rTime">0s</div></div>
+        <div class="stat"><div class="k">Prom / ejercicio</div><div class="v" id="rAvg">0s</div></div>
+        <div class="stat"><div class="k">Más rápido</div><div class="v" id="rFast">0s</div></div>
+        <div class="stat"><div class="k">Más lento</div><div class="v" id="rSlow">0s</div></div>
+      </div>
+      <div class="review" id="review"></div>
+    </div>
+    <button class="start" id="again">Otra ronda</button>
+  </section>
+
+  <section id="dash" class="hidden">
+    <div class="card" style="margin-bottom:16px">
+      <h2>Total histórico correctos</h2>
+      <div class="totrow" id="totRow"></div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <h2>Mejor racha alcanzada</h2>
+      <div class="totrow" id="bestRow"></div>
+    </div>
+    <div class="card">
+      <h2>Correctos por día</h2>
+      <div id="dayList"></div>
+    </div>
+    <button class="danger" id="reset">Borrar todo el progreso</button>
+  </section>
+</div>
+
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  const setup=$('#setup'), play=$('#play'), results=$('#results'), dash=$('#dash');
+  const OPS=['add','sub','mul'];
+  const SYM={add:'+',sub:'−',mul:'×'};
+  const NAME={add:'Suma',sub:'Resta',mul:'Mult'};
+
+  // Categorías granulares = operación + banda
+  const CATS=['add1','add2','add3','sub1','sub2','sub3','mul1','mul2'];
+  const CAT_INFO={
+    add1:{op:'add',label:'0–99'},   add2:{op:'add',label:'100–499'}, add3:{op:'add',label:'500–999'},
+    sub1:{op:'sub',label:'0–99'},   sub2:{op:'sub',label:'100–499'}, sub3:{op:'sub',label:'500–999'},
+    mul1:{op:'mul',label:'1×1 díg'},mul2:{op:'mul',label:'2×1 díg'}
+  };
+  // dado op + valor de cfg devuelve la categoría
+  function catOf(op,cfgVal){
+    if(op==='mul') return cfgVal===2?'mul2':'mul1';
+    return op+cfgVal; // add1/add2/add3 etc
+  }
+
+  const KEY='practicaMental_v2';
+  function blankCats(){const o={};CATS.forEach(c=>o[c]=0);return o;}
+  function blankData(){return {streak:blankCats(),best:blankCats(),total:blankCats(),days:{}};}
+  function load(){try{const d=JSON.parse(localStorage.getItem(KEY));return d&&d.streak?d:blankData();}catch(e){return blankData();}}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(DATA));}catch(e){}}
+  let DATA=load();
+
+  function todayKey(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  function record(cat,ok){
+    if(ok){
+      DATA.streak[cat]++;
+      if(DATA.streak[cat]>DATA.best[cat])DATA.best[cat]=DATA.streak[cat];
+      DATA.total[cat]++;
+      const k=todayKey();
+      if(!DATA.days[k])DATA.days[k]=blankCats();
+      DATA.days[k][cat]++;
+    }else{DATA.streak[cat]=0;}
+    save();
+  }
+
+  const selected=new Set(['add']);
+  let count=10;
+  const cfg={add:1,sub:1,mul:1};  // banda dificultad sumas/restas (1/2/3), formato mult (1/2)
+
+  // manejo de los segmented controls de rango
+  document.querySelectorAll('.seg').forEach(seg=>{
+    seg.addEventListener('click',e=>{
+      const b=e.target.closest('button');if(!b)return;
+      const which=seg.dataset.cfg;
+      cfg[which]=parseInt(b.dataset.r,10);
+      seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+    });
+  });
+  function renderCfgVisibility(){
+    const mix=selected.has('mix');
+    $('#cfgAdd').classList.toggle('show', mix||selected.has('add'));
+    $('#cfgSub').classList.toggle('show', mix||selected.has('sub'));
+    $('#cfgMul').classList.toggle('show', mix||selected.has('mul'));
+  }
+  $('#ops').addEventListener('click',e=>{
+    const el=e.target.closest('.op');if(!el)return;
+    const op=el.dataset.op;
+    if(op==='mix'){selected.clear();selected.add('mix');}
+    else{selected.delete('mix');if(selected.has(op)){if(selected.size>1)selected.delete(op);}else selected.add(op);}
+    renderOps();
+  });
+  function renderOps(){
+    document.querySelectorAll('.op').forEach(el=>el.classList.toggle('on',selected.has(el.dataset.op)));
+    $('#startBtn').disabled=selected.size===0;
+    renderCfgVisibility();
+  }
+  const countInput=$('#count');
+  const clamp=n=>Math.max(1,Math.min(200,n||1));
+  $('#minus').onclick=()=>{count=clamp(count-1);countInput.value=count};
+  $('#plus').onclick =()=>{count=clamp(count+1);countInput.value=count};
+  countInput.oninput=()=>{count=clamp(parseInt(countInput.value,10))};
+  countInput.onblur =()=>{countInput.value=count};
+  document.querySelectorAll('.quick button').forEach(b=>b.onclick=()=>{count=clamp(parseInt(b.dataset.n,10));countInput.value=count});
+
+  function renderStreakStrip(){
+    const el=$('#streakStrip');if(!el)return;el.innerHTML='';
+    CATS.forEach(cat=>{
+      const s=DATA.streak[cat],b=DATA.best[cat],info=CAT_INFO[cat];
+      const d=document.createElement('div');d.className='streak';
+      d.innerHTML=`<div class="op-n">${SYM[info.op]} ${info.label}</div><div class="v ${s===0?'zero':''}">${s}</div><div class="best">récord ${b}</div>`;
+      el.appendChild(d);
+    });
+  }
+
+  const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+  const BAND={1:[0,99],2:[100,499],3:[500,999]};
+  function makeProblem(){
+    const pool=selected.has('mix')?['add','sub','mul']:[...selected];
+    const op=pool[rnd(0,pool.length-1)];
+    let a,b,ans,cat;
+    if(op==='add'){const[lo,hi]=BAND[cfg.add];a=rnd(lo,hi);b=rnd(lo,hi);ans=a+b;cat=catOf('add',cfg.add);}
+    else if(op==='sub'){const[lo,hi]=BAND[cfg.sub];a=rnd(lo,hi);b=rnd(lo,hi);if(b>a)[a,b]=[b,a];ans=a-b;cat=catOf('sub',cfg.sub);}
+    else{ // mult: cfg.mul = 1 (1×1) o 2 (2×1)
+      a = cfg.mul===2 ? rnd(10,99) : rnd(2,9);
+      b = rnd(2,9);
+      ans=a*b;cat=catOf('mul',cfg.mul);
+    }
+    return {op,cat,a,b,ans,text:`${a} ${SYM[op]} ${b}`};
+  }
+
+  let probs=[],idx=0,log=[],tStart=0,qStart=0,tickTimer=null;
+  function startGame(){
+    probs=[];for(let i=0;i<count;i++)probs.push(makeProblem());
+    idx=0;log=[];
+    setup.classList.add('hidden');results.classList.add('hidden');dash.classList.add('hidden');
+    play.classList.remove('hidden');
+    tStart=performance.now();
+    clearInterval(tickTimer);
+    tickTimer=setInterval(()=>{$('#clock').textContent=((performance.now()-tStart)/1000).toFixed(1)+'s'},100);
+    showProblem();
+  }
+  function showProblem(){
+    const p=probs[idx];
+    $('#qText').textContent=p.text;$('#qText').className='q';
+    $('#prog').textContent=`${idx+1} / ${probs.length}`;
+    $('#barFill').style.width=(idx/probs.length*100)+'%';
+    $('#live').innerHTML=`racha ${NAME[p.op]} ${CAT_INFO[p.cat].label}: <b>${DATA.streak[p.cat]}</b>`;
+    $('#answer').value='';$('#answer').classList.remove('bad');
+    qStart=performance.now();
+  }
+  function submit(){
+    const val=$('#answer').value;if(val==='')return;
+    const p=probs[idx];
+    const took=(performance.now()-qStart)/1000;
+    const ok=parseInt(val,10)===p.ans;
+    record(p.cat,ok);
+    log.push({op:p.op,cat:p.cat,text:p.text,ans:p.ans,your:val,ok,took});
+    $('#qText').classList.add(ok?'flash-ok':'flash-no');
+    $('#live').innerHTML=`racha ${NAME[p.op]} ${CAT_INFO[p.cat].label}: <b>${DATA.streak[p.cat]}</b>`;
+    if(!ok)$('#answer').classList.add('bad');
+    setTimeout(()=>{idx++;idx>=probs.length?finish():showProblem();},ok?160:520);
+  }
+  function press(k){
+    const a=$('#answer');
+    if(k==='del')a.value=a.value.slice(0,-1);
+    else if(k==='go')submit();
+    else if(a.value.length<6)a.value+=k;
+  }
+  $('.pad').addEventListener('click',e=>{const b=e.target.closest('button');if(b)press(b.dataset.k)});
+  document.addEventListener('keydown',e=>{
+    if(play.classList.contains('hidden'))return;
+    if(e.key>='0'&&e.key<='9')press(e.key);
+    else if(e.key==='Backspace'){e.preventDefault();press('del')}
+    else if(e.key==='Enter'){e.preventDefault();press('go')}
+  });
+  $('#quit').onclick=()=>{clearInterval(tickTimer);play.classList.add('hidden');setup.classList.remove('hidden');renderStreakStrip()};
+
+  function finish(){
+    clearInterval(tickTimer);
+    $('#barFill').style.width='100%';
+    play.classList.add('hidden');results.classList.remove('hidden');
+    const total=(performance.now()-tStart)/1000;
+    const correct=log.filter(x=>x.ok).length;
+    const times=log.map(x=>x.took);
+    const avg=times.reduce((a,b)=>a+b,0)/times.length;
+    $('#rCorrect').textContent=correct;$('#rTotal').textContent=log.length;
+    $('#rSub').textContent=correct===log.length?'perfecto':`${log.length-correct} falladas`;
+    $('#rTime').textContent=fmt(total);
+    $('#rAvg').textContent=avg.toFixed(1)+'s';
+    $('#rFast').textContent=Math.min(...times).toFixed(1)+'s';
+    $('#rSlow').textContent=Math.max(...times).toFixed(1)+'s';
+    const rev=$('#review');rev.innerHTML='';
+    log.forEach(x=>{
+      const d=document.createElement('div');d.className='rev'+(x.ok?'':' miss');
+      d.innerHTML=x.ok
+        ?`<span class="exp">${x.text} = <b>${x.ans}</b></span><span><span class="t">${x.took.toFixed(1)}s</span> <span class="tick">✓</span></span>`
+        :`<span class="exp">${x.text} = <b>${x.ans}</b> <span class="yours">(pusiste ${x.your})</span></span><span class="t">${x.took.toFixed(1)}s</span>`;
+      rev.appendChild(d);
+    });
+  }
+  function fmt(s){if(s<60)return s.toFixed(1)+'s';const m=Math.floor(s/60);return `${m}m ${Math.round(s%60)}s`}
+
+  // agrupa las categorías de una operación
+  const CATS_BY_OP={
+    add:['add1','add2','add3'],
+    sub:['sub1','sub2','sub3'],
+    mul:['mul1','mul2']
+  };
+  function statBlock(op, field, unitLabel){
+    const cats=CATS_BY_OP[op];
+    const rows=cats.map(c=>{
+      const v=DATA[field][c];
+      return `<div class="gcell"><span class="gl">${CAT_INFO[c].label}</span><span class="gv ${v===0?'z':''}">${v}</span></div>`;
+    }).join('');
+    return `<div class="grp"><div class="grp-h">${SYM[op]} ${NAME[op]}</div><div class="grp-cells">${rows}</div></div>`;
+  }
+  function renderDash(){
+    $('#totRow').innerHTML = OPS.map(op=>statBlock(op,'total','correctos')).join('');
+    $('#bestRow').innerHTML = OPS.map(op=>statBlock(op,'best','seguidas')).join('');
+
+    const dl=$('#dayList');dl.innerHTML='';
+    const keys=Object.keys(DATA.days).sort().reverse();
+    if(keys.length===0){dl.innerHTML='<div class="empty">Todavía no hay días registrados.</div>';return;}
+    const tk=todayKey();
+    keys.forEach(k=>{
+      const day=DATA.days[k];
+      const dtot=CATS.reduce((s,c)=>s+(day[c]||0),0);
+      const d=document.createElement('div');d.className='day';
+      const groups=OPS.map(op=>{
+        const cells=CATS_BY_OP[op].map(c=>{
+          const v=day[c]||0;
+          return `<div class="cell"><div class="cn">${CAT_INFO[c].label}</div><div class="cv ${v===0?'z':''}">${v}</div></div>`;
+        }).join('');
+        return `<div class="dgrp"><div class="dgrp-h">${SYM[op]} ${NAME[op]}</div><div class="cells">${cells}</div></div>`;
+      }).join('');
+      d.innerHTML=`<div class="dh"><span class="date ${k===tk?'today':''}">${k===tk?'Hoy · '+prettyDate(k):prettyDate(k)}</span><span class="dtot">${dtot} total</span></div>${groups}`;
+      dl.appendChild(d);
+    });
+  }
+  function prettyDate(k){
+    const [y,m,d]=k.split('-');
+    const mn=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    return `${parseInt(d,10)} ${mn[parseInt(m,10)-1]} ${y}`;
+  }
+
+  function show(which){
+    play.classList.add('hidden');results.classList.add('hidden');
+    if(which==='dash'){
+      setup.classList.add('hidden');dash.classList.remove('hidden');
+      $('#tabDash').classList.add('on');$('#tabPractice').classList.remove('on');
+      renderDash();
+    }else{
+      dash.classList.add('hidden');setup.classList.remove('hidden');
+      $('#tabPractice').classList.add('on');$('#tabDash').classList.remove('on');
+      renderStreakStrip();
+    }
+  }
+  $('#tabPractice').onclick=()=>show('practice');
+  $('#tabDash').onclick=()=>show('dash');
+  $('#reset').onclick=()=>{if(confirm('¿Borrar TODO el progreso? Rachas, totales y días. No se puede deshacer.')){DATA=blankData();save();renderDash();}};
+
+  $('#startBtn').onclick=startGame;
+  $('#again').onclick=()=>{results.classList.add('hidden');show('practice')};
+  renderOps();renderStreakStrip();
+})();
+</script>
+</body>
+</html>
