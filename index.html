@@ -11,7 +11,7 @@
     --wrong:#e0555f;--right:#3fae87;--gold:#c48a2a;
     --num:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   }
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
   html,body{height:100%}
   body{background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;justify-content:center;padding:16px;min-height:100vh}
   .app{width:100%;max-width:440px;display:flex;flex-direction:column;gap:16px}
@@ -41,8 +41,8 @@
   .quick button:active{background:#e3e7ef;color:var(--ink)}
   .cfg{display:none}
   .cfg.show{display:block}
-  .seg{display:flex;gap:8px}
-  .seg button{flex:1;background:var(--panel-2);border:1px solid var(--line);color:var(--ink-dim);border-radius:9px;padding:10px 4px;font-family:var(--num);font-size:13px;font-weight:600;cursor:pointer;transition:.12s}
+  .seg{display:flex;gap:8px;flex-wrap:wrap}
+  .seg button{flex:1 1 auto;min-width:60px;background:var(--panel-2);border:1px solid var(--line);color:var(--ink-dim);border-radius:9px;padding:10px 4px;font-family:var(--num);font-size:13px;font-weight:600;cursor:pointer;transition:.12s}
   .seg button:active{transform:scale(.97)}
   .seg button.on{background:#eef0fc;border-color:var(--accent);color:var(--accent)}
   .start{width:100%;background:var(--accent);color:var(--accent-ink);border:none;border-radius:12px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;letter-spacing:.02em;transition:.12s}
@@ -95,8 +95,8 @@
   .totrow{display:flex;flex-direction:column;gap:10px}
   .grp{background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:12px 14px}
   .grp-h{font-family:var(--num);font-size:13px;font-weight:700;color:var(--ink-dim);margin-bottom:8px}
-  .grp-cells{display:flex;gap:8px}
-  .gcell{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 4px}
+  .grp-cells{display:flex;gap:8px;flex-wrap:wrap}
+  .gcell{flex:1 1 auto;min-width:56px;display:flex;flex-direction:column;align-items:center;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 4px}
   .gcell .gl{font-family:var(--num);font-size:11px;color:var(--ink-dim)}
   .gcell .gv{font-family:var(--num);font-size:20px;font-weight:700;color:var(--ink)}
   .gcell .gv.z{color:var(--line)}
@@ -132,15 +132,16 @@
     <div class="card" style="margin-bottom:16px">
       <h2>Operaciones</h2>
       <div class="ops" id="ops">
-        <div class="op on" data-op="add"><span class="sym">+</span><span class="lbl">Sumas · 2 díg</span></div>
-        <div class="op" data-op="sub"><span class="sym">−</span><span class="lbl">Restas · 2 díg</span></div>
+        <div class="op on" data-op="add"><span class="sym">+</span><span class="lbl">Sumas</span></div>
+        <div class="op" data-op="sub"><span class="sym">−</span><span class="lbl">Restas</span></div>
         <div class="op" data-op="mul"><span class="sym">×</span><span class="lbl">Multiplicación</span></div>
+        <div class="op" data-op="div"><span class="sym">÷</span><span class="lbl">División</span></div>
         <div class="op" data-op="mix"><span class="sym">±×</span><span class="lbl">Mixto</span></div>
       </div>
 
       <div class="field cfg" id="cfgAdd">
         <label>Dificultad de sumas</label>
-        <div class="seg" data-cfg="add">
+        <div class="seg multi" data-cfg="add">
           <button data-r="1" class="on">0–99</button>
           <button data-r="2">100–499</button>
           <button data-r="3">500–999</button>
@@ -148,7 +149,7 @@
       </div>
       <div class="field cfg" id="cfgSub">
         <label>Dificultad de restas</label>
-        <div class="seg" data-cfg="sub">
+        <div class="seg multi" data-cfg="sub">
           <button data-r="1" class="on">0–99</button>
           <button data-r="2">100–499</button>
           <button data-r="3">500–999</button>
@@ -156,9 +157,19 @@
       </div>
       <div class="field cfg" id="cfgMul">
         <label>Formato de multiplicación</label>
-        <div class="seg" data-cfg="mul">
+        <div class="seg multi" data-cfg="mul">
           <button data-r="1" class="on">1 × 1 díg</button>
           <button data-r="2">2 × 1 díg</button>
+        </div>
+      </div>
+      <div class="field cfg" id="cfgDiv">
+        <label>Formato de división</label>
+        <div class="seg multi" data-cfg="div">
+          <button data-r="1" class="on">1 ÷ 1</button>
+          <button data-r="2">2 ÷ 1</button>
+          <button data-r="3">3 ÷ 1</button>
+          <button data-r="4">2 ÷ 2</button>
+          <button data-r="5">3 ÷ 2</button>
         </div>
       </div>
 
@@ -236,27 +247,28 @@
 (function(){
   const $ = s => document.querySelector(s);
   const setup=$('#setup'), play=$('#play'), results=$('#results'), dash=$('#dash');
-  const OPS=['add','sub','mul'];
-  const SYM={add:'+',sub:'−',mul:'×'};
-  const NAME={add:'Suma',sub:'Resta',mul:'Mult'};
+  const OPS=['add','sub','mul','div'];
+  const SYM={add:'+',sub:'−',mul:'×',div:'÷'};
+  const NAME={add:'Suma',sub:'Resta',mul:'Mult',div:'División'};
 
-  // Categorías granulares = operación + banda
-  const CATS=['add1','add2','add3','sub1','sub2','sub3','mul1','mul2'];
+  // Categorías granulares = operación + banda/formato
+  const CATS=['add1','add2','add3','sub1','sub2','sub3','mul1','mul2','div1','div2','div3','div4','div5'];
   const CAT_INFO={
     add1:{op:'add',label:'0–99'},   add2:{op:'add',label:'100–499'}, add3:{op:'add',label:'500–999'},
     sub1:{op:'sub',label:'0–99'},   sub2:{op:'sub',label:'100–499'}, sub3:{op:'sub',label:'500–999'},
-    mul1:{op:'mul',label:'1×1 díg'},mul2:{op:'mul',label:'2×1 díg'}
+    mul1:{op:'mul',label:'1×1'},    mul2:{op:'mul',label:'2×1'},
+    div1:{op:'div',label:'1÷1'},    div2:{op:'div',label:'2÷1'},     div3:{op:'div',label:'3÷1'},
+    div4:{op:'div',label:'2÷2'},    div5:{op:'div',label:'3÷2'}
   };
-  // dado op + valor de cfg devuelve la categoría
-  function catOf(op,cfgVal){
-    if(op==='mul') return cfgVal===2?'mul2':'mul1';
-    return op+cfgVal; // add1/add2/add3 etc
-  }
+  function catOf(op,val){return op+val;} // add1, mul2, div5, etc
 
-  const KEY='practicaMental_v2';
+  const KEY='practicaMental_v3';
   function blankCats(){const o={};CATS.forEach(c=>o[c]=0);return o;}
   function blankData(){return {streak:blankCats(),best:blankCats(),total:blankCats(),days:{}};}
-  function load(){try{const d=JSON.parse(localStorage.getItem(KEY));return d&&d.streak?d:blankData();}catch(e){return blankData();}}
+  function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(!d||!d.streak)return blankData();
+    // asegura que categorías nuevas existan aunque el guardado sea viejo
+    CATS.forEach(c=>{if(d.streak[c]==null)d.streak[c]=0;if(d.best[c]==null)d.best[c]=0;if(d.total[c]==null)d.total[c]=0;});
+    return d;}catch(e){return blankData();}}
   function save(){try{localStorage.setItem(KEY,JSON.stringify(DATA));}catch(e){}}
   let DATA=load();
 
@@ -275,15 +287,19 @@
 
   const selected=new Set(['add']);
   let count=10;
-  const cfg={add:1,sub:1,mul:1};  // banda dificultad sumas/restas (1/2/3), formato mult (1/2)
+  // bandas/formatos ACTIVOS por operación (multi-select). valores por defecto: primera banda.
+  const cfg={add:new Set([1]),sub:new Set([1]),mul:new Set([1]),div:new Set([1])};
 
-  // manejo de los segmented controls de rango
-  document.querySelectorAll('.seg').forEach(seg=>{
+  // segmented controls multi-select: togglear sin dejar vacío
+  document.querySelectorAll('.seg.multi').forEach(seg=>{
     seg.addEventListener('click',e=>{
       const b=e.target.closest('button');if(!b)return;
       const which=seg.dataset.cfg;
-      cfg[which]=parseInt(b.dataset.r,10);
-      seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+      const r=parseInt(b.dataset.r,10);
+      const set=cfg[which];
+      if(set.has(r)){ if(set.size>1) set.delete(r); }  // no permitir dejar 0 activas
+      else set.add(r);
+      seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on', set.has(parseInt(x.dataset.r,10))));
     });
   });
   function renderCfgVisibility(){
@@ -291,6 +307,7 @@
     $('#cfgAdd').classList.toggle('show', mix||selected.has('add'));
     $('#cfgSub').classList.toggle('show', mix||selected.has('sub'));
     $('#cfgMul').classList.toggle('show', mix||selected.has('mul'));
+    $('#cfgDiv').classList.toggle('show', mix||selected.has('div'));
   }
   $('#ops').addEventListener('click',e=>{
     const el=e.target.closest('.op');if(!el)return;
@@ -323,18 +340,29 @@
   }
 
   const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+  const pick=arr=>arr[rnd(0,arr.length-1)];
   const BAND={1:[0,99],2:[100,499],3:[500,999]};
+
+  function makeDivision(fmt){
+    // fmt: 1=1÷1, 2=2÷1, 3=3÷1, 4=2÷2, 5=3÷2 ; respuesta = cociente entero
+    let a,b;
+    if(fmt===1){a=rnd(2,9);b=rnd(2,9);}
+    else if(fmt===2){a=rnd(10,99);b=rnd(2,9);}
+    else if(fmt===3){a=rnd(100,999);b=rnd(2,9);}
+    else if(fmt===4){a=rnd(10,99);b=rnd(10,99);}
+    else{a=rnd(100,999);b=rnd(10,99);}
+    if(b>a)[a,b]=[b,a];            // evita cociente 0
+    return {a,b,ans:Math.floor(a/b)};
+  }
+
   function makeProblem(){
-    const pool=selected.has('mix')?['add','sub','mul']:[...selected];
-    const op=pool[rnd(0,pool.length-1)];
+    const pool=selected.has('mix')?['add','sub','mul','div']:[...selected];
+    const op=pick(pool);
     let a,b,ans,cat;
-    if(op==='add'){const[lo,hi]=BAND[cfg.add];a=rnd(lo,hi);b=rnd(lo,hi);ans=a+b;cat=catOf('add',cfg.add);}
-    else if(op==='sub'){const[lo,hi]=BAND[cfg.sub];a=rnd(lo,hi);b=rnd(lo,hi);if(b>a)[a,b]=[b,a];ans=a-b;cat=catOf('sub',cfg.sub);}
-    else{ // mult: cfg.mul = 1 (1×1) o 2 (2×1)
-      a = cfg.mul===2 ? rnd(10,99) : rnd(2,9);
-      b = rnd(2,9);
-      ans=a*b;cat=catOf('mul',cfg.mul);
-    }
+    if(op==='add'){const band=pick([...cfg.add]);const[lo,hi]=BAND[band];a=rnd(lo,hi);b=rnd(lo,hi);ans=a+b;cat=catOf('add',band);}
+    else if(op==='sub'){const band=pick([...cfg.sub]);const[lo,hi]=BAND[band];a=rnd(lo,hi);b=rnd(lo,hi);if(b>a)[a,b]=[b,a];ans=a-b;cat=catOf('sub',band);}
+    else if(op==='mul'){const fmt=pick([...cfg.mul]);a=fmt===2?rnd(10,99):rnd(2,9);b=rnd(2,9);ans=a*b;cat=catOf('mul',fmt);}
+    else{const fmt=pick([...cfg.div]);const d=makeDivision(fmt);a=d.a;b=d.b;ans=d.ans;cat=catOf('div',fmt);}
     return {op,cat,a,b,ans,text:`${a} ${SYM[op]} ${b}`};
   }
 
@@ -414,7 +442,8 @@
   const CATS_BY_OP={
     add:['add1','add2','add3'],
     sub:['sub1','sub2','sub3'],
-    mul:['mul1','mul2']
+    mul:['mul1','mul2'],
+    div:['div1','div2','div3','div4','div5']
   };
   function statBlock(op, field, unitLabel){
     const cats=CATS_BY_OP[op];
