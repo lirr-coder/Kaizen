@@ -143,6 +143,7 @@
         <div class="op" data-op="sub"><span class="sym">−</span><span class="lbl">Restas</span></div>
         <div class="op" data-op="mul"><span class="sym">×</span><span class="lbl">Multiplicación</span></div>
         <div class="op" data-op="div"><span class="sym">÷</span><span class="lbl">División</span></div>
+        <div class="op" data-op="pct"><span class="sym">%</span><span class="lbl">Porcentaje</span></div>
         <div class="op" data-op="mix"><span class="sym">±×</span><span class="lbl">Mixto</span></div>
       </div>
 
@@ -175,6 +176,13 @@
           <button data-r="1" class="on">2 ÷ 1</button>
           <button data-r="2">3 ÷ 1</button>
           <button data-r="3">3 ÷ 2</button>
+        </div>
+      </div>
+      <div class="field cfg" id="cfgPct">
+        <label>Formato de porcentaje</label>
+        <div class="seg multi" data-cfg="pct">
+          <button data-r="1" class="on">% de 2 díg</button>
+          <button data-r="2">% de 3 díg</button>
         </div>
       </div>
 
@@ -257,21 +265,22 @@
 (function(){
   const $ = s => document.querySelector(s);
   const setup=$('#setup'), play=$('#play'), results=$('#results'), dash=$('#dash');
-  const OPS=['add','sub','mul','div'];
-  const SYM={add:'+',sub:'−',mul:'×',div:'÷'};
-  const NAME={add:'Suma',sub:'Resta',mul:'Mult',div:'División'};
+  const OPS=['add','sub','mul','div','pct'];
+  const SYM={add:'+',sub:'−',mul:'×',div:'÷',pct:'%'};
+  const NAME={add:'Suma',sub:'Resta',mul:'Mult',div:'División',pct:'Porcentaje'};
 
   // Categorías granulares = operación + banda/formato
-  const CATS=['add1','add2','add3','sub1','sub2','sub3','mul1','mul2','div1','div2','div3'];
+  const CATS=['add1','add2','add3','sub1','sub2','sub3','mul1','mul2','div1','div2','div3','pct1','pct2'];
   const CAT_INFO={
     add1:{op:'add',label:'0–99'},   add2:{op:'add',label:'100–499'}, add3:{op:'add',label:'500–999'},
     sub1:{op:'sub',label:'0–99'},   sub2:{op:'sub',label:'100–499'}, sub3:{op:'sub',label:'500–999'},
     mul1:{op:'mul',label:'1×1'},    mul2:{op:'mul',label:'2×1'},
-    div1:{op:'div',label:'2÷1'},    div2:{op:'div',label:'3÷1'},     div3:{op:'div',label:'3÷2'}
+    div1:{op:'div',label:'2÷1'},    div2:{op:'div',label:'3÷1'},     div3:{op:'div',label:'3÷2'},
+    pct1:{op:'pct',label:'2 díg'},  pct2:{op:'pct',label:'3 díg'}
   };
   function catOf(op,val){return op+val;} // add1, mul2, div5, etc
 
-  const KEY='practicaMental_v3';
+  const KEY='practicaMental_v4';
   function blankCats(){const o={};CATS.forEach(c=>o[c]=0);return o;}
   function blankData(){return {streak:blankCats(),best:blankCats(),total:blankCats(),days:{}};}
   function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(!d||!d.streak)return blankData();
@@ -297,7 +306,7 @@
   const selected=new Set(['add']);
   let count=10;
   // bandas/formatos ACTIVOS por operación (multi-select). valores por defecto: primera banda.
-  const cfg={add:new Set([1]),sub:new Set([1]),mul:new Set([1]),div:new Set([1])};
+  const cfg={add:new Set([1]),sub:new Set([1]),mul:new Set([1]),div:new Set([1]),pct:new Set([1])};
 
   // segmented controls multi-select: togglear sin dejar vacío
   document.querySelectorAll('.seg.multi').forEach(seg=>{
@@ -317,6 +326,7 @@
     $('#cfgSub').classList.toggle('show', mix||selected.has('sub'));
     $('#cfgMul').classList.toggle('show', mix||selected.has('mul'));
     $('#cfgDiv').classList.toggle('show', mix||selected.has('div'));
+    $('#cfgPct').classList.toggle('show', mix||selected.has('pct'));
   }
   $('#ops').addEventListener('click',e=>{
     const el=e.target.closest('.op');if(!el)return;
@@ -362,15 +372,26 @@
     return {a,b,ans:Math.floor(a/b)};
   }
 
+  function makePct(fmt){
+    // fmt: 1 = base 2 díg, 2 = base 3 díg. resultado = redondeo entero
+    const base = fmt===2 ? rnd(100,999) : rnd(10,99);
+    // 90%: porcentaje múltiplo de 5 entre 5 y 50 ; 10%: entre 55 y 95
+    let p;
+    if(Math.random()<0.9){ p=rnd(1,10)*5; }      // 5..50
+    else{ p=rnd(11,19)*5; }                        // 55..95
+    return {base,p,ans:Math.round(base*p/100)};
+  }
+
   function makeProblem(){
-    const pool=selected.has('mix')?['add','sub','mul','div']:[...selected];
+    const pool=selected.has('mix')?['add','sub','mul','div','pct']:[...selected];
     const op=pick(pool);
-    let a,b,ans,cat;
-    if(op==='add'){const band=pick([...cfg.add]);const[lo,hi]=BAND[band];a=rnd(lo,hi);b=rnd(lo,hi);ans=a+b;cat=catOf('add',band);}
-    else if(op==='sub'){const band=pick([...cfg.sub]);const[lo,hi]=BAND[band];a=rnd(lo,hi);b=rnd(lo,hi);if(b>a)[a,b]=[b,a];ans=a-b;cat=catOf('sub',band);}
-    else if(op==='mul'){const fmt=pick([...cfg.mul]);a=fmt===2?rnd(10,99):rnd(2,9);b=rnd(2,9);ans=a*b;cat=catOf('mul',fmt);}
-    else{const fmt=pick([...cfg.div]);const d=makeDivision(fmt);a=d.a;b=d.b;ans=d.ans;cat=catOf('div',fmt);}
-    return {op,cat,a,b,ans,text:`${a} ${SYM[op]} ${b}`};
+    let a,b,ans,cat,text;
+    if(op==='add'){const band=pick([...cfg.add]);const[lo,hi]=BAND[band];a=rnd(lo,hi);b=rnd(lo,hi);ans=a+b;cat=catOf('add',band);text=`${a} + ${b}`;}
+    else if(op==='sub'){const band=pick([...cfg.sub]);const[lo,hi]=BAND[band];a=rnd(lo,hi);b=rnd(lo,hi);if(b>a)[a,b]=[b,a];ans=a-b;cat=catOf('sub',band);text=`${a} − ${b}`;}
+    else if(op==='mul'){const fmt=pick([...cfg.mul]);a=fmt===2?rnd(10,99):rnd(2,9);b=rnd(2,9);ans=a*b;cat=catOf('mul',fmt);text=`${a} × ${b}`;}
+    else if(op==='div'){const fmt=pick([...cfg.div]);const d=makeDivision(fmt);a=d.a;b=d.b;ans=d.ans;cat=catOf('div',fmt);text=`${a} ÷ ${b}`;}
+    else{const fmt=pick([...cfg.pct]);const d=makePct(fmt);a=d.p;b=d.base;ans=d.ans;cat=catOf('pct',fmt);text=`${d.p}% de ${d.base}`;}
+    return {op,cat,a,b,ans,text};
   }
 
   // ---------- EXPLICACIONES (métodos de Luis) ----------
@@ -444,10 +465,32 @@
     return `¿Cuántas veces cabe ${b} en ${a}? Tanteás: ${tries}. `+
            `Cabe ${q} veces → <b>${q}</b>`+(rem>0?` (resto ${rem}, se ignora)`:'')+'.';
   }
+  function explainPct(p,base){
+    const ten=base/10;                       // valor de 10%
+    const fmtN=x=>Number.isInteger(x)?x:x.toFixed(1);
+    const tens=Math.floor(p/10);             // cuántas decenas de %
+    const hasFive=p%10===5;                   // sobra un 5%
+    let parts=[], sum=0;
+    if(tens>0){ const v=ten*tens; const mult=tens===1?`${fmtN(ten)}`:`${fmtN(ten)}×${tens} = ${fmtN(v)}`; parts.push(`${tens*10}% = ${mult}`); sum+=v; }
+    if(hasFive){ const v=ten/2; parts.push(`5% = mitad de 10% = ${fmtN(v)}`); sum+=v; }
+    let s=`10% de ${base} = ${fmtN(ten)}. `;
+    if(parts.length===1 && tens===1 && !hasFive){
+      // caso 10% exacto
+      s=`10% de ${base} = ${fmtN(ten)}.`;
+    } else {
+      s+=parts.join(', ')+'. ';
+      if(parts.length>1) s+=`Sumás: ${fmtN(sum)}. `;
+    }
+    const rounded=Math.round(base*p/100);
+    if(!Number.isInteger(sum)) s+=`Redondeás → <b>${rounded}</b>.`;
+    else s+=`→ <b>${rounded}</b>.`;
+    return s;
+  }
   function explainFor(p){
     if(p.op==='add') return explainAdd(p.a,p.b);
     if(p.op==='sub') return explainSub(p.a,p.b);
     if(p.op==='mul') return explainMul(p.a,p.b);
+    if(p.op==='pct') return explainPct(p.a,p.b); // a=porcentaje, b=base
     // división: 3÷2 (divisor 2 dígitos) usa estimación; el resto, dígito por dígito
     if(p.b>=10) return explainDivEstimate(p.a,p.b);
     return explainDivDigit(p.a,p.b);
@@ -551,7 +594,8 @@
     add:['add1','add2','add3'],
     sub:['sub1','sub2','sub3'],
     mul:['mul1','mul2'],
-    div:['div1','div2','div3']
+    div:['div1','div2','div3'],
+    pct:['pct1','pct2']
   };
   function statBlock(op, field, unitLabel){
     const cats=CATS_BY_OP[op];
