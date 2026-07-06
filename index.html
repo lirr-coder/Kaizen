@@ -76,6 +76,13 @@
   .pad button:active{background:#e3e7ef}
   .pad .go{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
   .pad .del{color:var(--ink-dim)}
+  .explain{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .explain .ex-head{font-family:var(--num);font-size:15px;color:var(--ink-dim);margin-bottom:8px}
+  .explain .ex-head b{color:var(--right);font-size:20px}
+  .explain .ex-body{font-size:15px;line-height:1.55;color:var(--ink)}
+  .explain .ex-body b{color:var(--accent);font-family:var(--num)}
+  .explain .ex-cont{width:100%;margin-top:14px;background:var(--accent);color:var(--accent-ink);border:none;border-radius:11px;padding:14px;font-size:15px;font-weight:700;cursor:pointer}
+  .explain .ex-cont:active{transform:scale(.98)}
   .res .big{text-align:center;padding:8px 0 4px}
   .res .score{font-family:var(--num);font-size:52px;font-weight:700}
   .res .score small{font-size:24px;color:var(--ink-dim)}
@@ -199,7 +206,12 @@
       <div class="q" id="qText">— + —</div>
     </div>
     <input class="answer" id="answer" inputmode="numeric" placeholder="?" readonly>
-    <div class="pad">
+    <div class="explain hidden" id="explain">
+      <div class="ex-head">Respuesta correcta: <b id="exAns"></b></div>
+      <div class="ex-body" id="exBody"></div>
+      <button class="ex-cont" id="exCont">Continuar →</button>
+    </div>
+    <div class="pad" id="pad">
       <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
       <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
       <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
@@ -361,6 +373,86 @@
     return {op,cat,a,b,ans,text:`${a} ${SYM[op]} ${b}`};
   }
 
+  // ---------- EXPLICACIONES (métodos de Luis) ----------
+  const ceilTen=n=>Math.ceil(n/10)*10;
+  function explainAdd(a,b){
+    // redondear el más cercano a su decena superior, sumar, restar el offset
+    const offA=ceilTen(a)-a, offB=ceilTen(b)-b;
+    let base,other,off,rounded;
+    if(offA<=offB){rounded=ceilTen(a);off=offA;base=a;other=b;}
+    else{rounded=ceilTen(b);off=offB;base=b;other=a;}
+    if(off===0){ // ya es decena exacta, no hay nada que compensar
+      return `${a} + ${b}: ${base} ya es decena exacta. ${a} + ${b} = <b>${a+b}</b>.`;
+    }
+    return `Redondeás ${base} a ${rounded} (le sumaste ${off}). `+
+           `${rounded} + ${other} = ${rounded+other}. `+
+           `Le restás ${off} → <b>${rounded+other-off}</b>.`;
+  }
+  function explainSub(a,b){
+    // counting up: de b sube al múltiplo de 10, luego al a; sumar saltos
+    const dec=ceilTen(b);
+    const j1=dec-b, j2=a-dec;
+    if(j1===0){ // b ya es decena
+      return `De ${b} a ${a} son ${a-b}. Resultado: <b>${a-b}</b>.`;
+    }
+    return `De ${b} subís a ${dec} → ${j1}. `+
+           `De ${dec} a ${a} → ${j2}. `+
+           `Sumás los saltos: ${j1} + ${j2} = <b>${j1+j2}</b>.`;
+  }
+  function explainMul(a,b){
+    // a×b, descomponer el de dos dígitos en decena+unidad
+    let big,small;
+    if(a>=10){big=a;small=b;}else{big=b;small=a;}
+    const tens=Math.floor(big/10)*10, units=big%10;
+    if(units===0){
+      return `${small} × ${big} = ${small} × ${tens} = <b>${small*big}</b>.`;
+    }
+    return `Partís ${big} en ${tens} y ${units}. `+
+           `${small} × ${tens} = ${small*tens}. `+
+           `${small} × ${units} = ${small*units}. `+
+           `Sumás: ${small*tens} + ${small*units} = <b>${small*big}</b>.`;
+  }
+  function explainDivDigit(a,b){
+    // división de izq a der arrastrando resto (divisor 1 dígito)
+    const digs=String(a).split('').map(Number);
+    let carry=0, steps=[], quot='';
+    digs.forEach((d,i)=>{
+      const cur=carry*10+d;
+      const q=Math.floor(cur/b);
+      const r=cur-q*b;
+      quot+=q;
+      if(i===0) steps.push(`${cur}÷${b} → ${q}, sobra ${r}`);
+      else steps.push(`pego el ${carry} al ${d} → ${cur}÷${b} → ${q}, sobra ${r}`);
+      carry=r;
+    });
+    // quitar ceros a la izquierda del cociente mostrado
+    const qClean=String(parseInt(quot,10));
+    return `Dividís de izquierda a derecha. ${steps.join('. ')}. Resultado: <b>${qClean}</b>`+
+           (carry>0?` (resto ${carry}, se ignora)`:'')+'.';
+  }
+  function explainDivEstimate(a,b){
+    // estimación por múltiplos (divisor 2 dígitos)
+    const q=Math.floor(a/b);
+    // arma un par de tanteos alrededor del cociente
+    const marks=[];
+    const lowTens=Math.floor(q/10)*10;
+    if(lowTens>=1) marks.push(lowTens);
+    if(q!==lowTens) marks.push(q);
+    marks.push(q+1);
+    const tries=marks.map(m=>`${b}×${m}=${b*m}${b*m>a?' (se pasa)':''}`).join(', ');
+    const rem=a-b*q;
+    return `¿Cuántas veces cabe ${b} en ${a}? Tanteás: ${tries}. `+
+           `Cabe ${q} veces → <b>${q}</b>`+(rem>0?` (resto ${rem}, se ignora)`:'')+'.';
+  }
+  function explainFor(p){
+    if(p.op==='add') return explainAdd(p.a,p.b);
+    if(p.op==='sub') return explainSub(p.a,p.b);
+    if(p.op==='mul') return explainMul(p.a,p.b);
+    // división: 3÷2 (divisor 2 dígitos) usa estimación; el resto, dígito por dígito
+    if(p.b>=10) return explainDivEstimate(p.a,p.b);
+    return explainDivDigit(p.a,p.b);
+  }
+
   let probs=[],idx=0,log=[],tStart=0,qStart=0,tickTimer=null;
   function startGame(){
     probs=[];for(let i=0;i<count;i++)probs.push(makeProblem());
@@ -381,7 +473,9 @@
     $('#answer').value='';$('#answer').classList.remove('bad');
     qStart=performance.now();
   }
+  let paused=false;
   function submit(){
+    if(paused)return;
     const val=$('#answer').value;if(val==='')return;
     const p=probs[idx];
     const took=(performance.now()-qStart)/1000;
@@ -390,23 +484,42 @@
     log.push({op:p.op,cat:p.cat,text:p.text,ans:p.ans,your:val,ok,took});
     $('#qText').classList.add(ok?'flash-ok':'flash-no');
     $('#live').innerHTML=`racha ${NAME[p.op]} ${CAT_INFO[p.cat].label}: <b>${DATA.streak[p.cat]}</b>`;
-    if(!ok)$('#answer').classList.add('bad');
-    setTimeout(()=>{idx++;idx>=probs.length?finish():showProblem();},ok?160:520);
+    if(ok){
+      setTimeout(()=>{idx++;idx>=probs.length?finish():showProblem();},160);
+    }else{
+      // pausa: mostrar explicación, esperar al botón Continuar
+      paused=true;
+      $('#answer').classList.add('bad');
+      $('#exAns').textContent=p.ans;
+      $('#exBody').innerHTML=explainFor(p);
+      $('#pad').classList.add('hidden');
+      $('#explain').classList.remove('hidden');
+    }
+  }
+  function continueAfterError(){
+    paused=false;
+    $('#explain').classList.add('hidden');
+    $('#pad').classList.remove('hidden');
+    idx++;
+    idx>=probs.length?finish():showProblem();
   }
   function press(k){
+    if(paused)return;
     const a=$('#answer');
     if(k==='del')a.value=a.value.slice(0,-1);
     else if(k==='go')submit();
     else if(a.value.length<6)a.value+=k;
   }
-  $('.pad').addEventListener('click',e=>{const b=e.target.closest('button');if(b)press(b.dataset.k)});
+  $('#pad').addEventListener('click',e=>{const b=e.target.closest('button');if(b)press(b.dataset.k)});
+  $('#exCont').onclick=continueAfterError;
   document.addEventListener('keydown',e=>{
     if(play.classList.contains('hidden'))return;
+    if(paused){ if(e.key==='Enter'){e.preventDefault();continueAfterError();} return; }
     if(e.key>='0'&&e.key<='9')press(e.key);
     else if(e.key==='Backspace'){e.preventDefault();press('del')}
     else if(e.key==='Enter'){e.preventDefault();press('go')}
   });
-  $('#quit').onclick=()=>{clearInterval(tickTimer);play.classList.add('hidden');setup.classList.remove('hidden');renderStreakStrip()};
+  $('#quit').onclick=()=>{clearInterval(tickTimer);paused=false;$('#explain').classList.add('hidden');$('#pad').classList.remove('hidden');play.classList.add('hidden');setup.classList.remove('hidden');renderStreakStrip()};
 
   function finish(){
     clearInterval(tickTimer);
