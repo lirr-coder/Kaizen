@@ -373,12 +373,9 @@
   }
 
   function makePct(fmt){
-    // fmt: 1 = base 2 díg, 2 = base 3 díg. resultado = redondeo entero
-    const base = fmt===2 ? rnd(100,999) : rnd(10,99);
-    // 90%: porcentaje múltiplo de 5 entre 5 y 50 ; 10%: entre 55 y 95
-    let p;
-    if(Math.random()<0.9){ p=rnd(1,10)*5; }      // 5..50
-    else{ p=rnd(11,19)*5; }                        // 55..95
+    // fmt: 1 = base 2 díg, 2 = base 3 díg. base múltiplo de 5; resultado = redondeo entero
+    const base = fmt===2 ? rnd(20,199)*5 : rnd(2,19)*5;  // 3 díg: 100–995 ; 2 díg: 10–95
+    const p = rnd(1,10)*5;                                 // 5..50, múltiplo de 5
     return {base,p,ans:Math.round(base*p/100)};
   }
 
