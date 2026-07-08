@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Práctica Mental</title>
+<title>Kaizen</title>
 <style>
   :root{
     --bg:#f7f8fb;--panel:#ffffff;--panel-2:#f1f3f8;--line:#e3e7ef;
@@ -134,13 +134,34 @@
   .formula .ft{font-size:14px;font-weight:700;color:var(--accent);margin-bottom:6px}
   .formula .fb{font-size:14px;line-height:1.6;color:var(--ink)}
   .formula .fb .ex{font-family:var(--num);background:var(--panel-2);border-radius:6px;padding:1px 5px;font-size:13px}
+  .subj-lang .mi{font-family:ui-sans-serif,system-ui;font-style:italic}
+  .phrase-hint{font-size:12px;color:var(--ink-dim);margin-bottom:12px;text-align:center}
+  .words{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;min-height:44px}
+  .word{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:17px;cursor:pointer;user-select:none;transition:.12s}
+  .word:active{transform:scale(.95)}
+  .word.sel{border-color:var(--accent);background:#eef0fc;color:var(--accent)}
+  .word.placed{opacity:.35;pointer-events:none}
+  .word.dragging{opacity:.5}
+  .boxes{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:4px}
+  .box{background:var(--panel);border:1.5px dashed var(--line);border-radius:12px;padding:12px;min-height:74px;transition:.12s}
+  .box.hot{border-color:var(--accent);background:#eef0fc}
+  .box .box-t{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-dim);font-weight:700;margin-bottom:8px;text-align:center}
+  .box .drop{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+  .box .chip{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-size:14px;cursor:pointer}
+  .box .chip:active{transform:scale(.95)}
+  .box.ok{border-color:var(--right);border-style:solid;background:#eefaf5}
+  .box.err{border-color:var(--wrong);border-style:solid;background:#fdf1f2}
+  .fcard-lang{border-color:#d9c9ef;background:#faf7ff}
+  .fcard-lang h2{color:#8b5cc4}
+  .fcard-lang .formula .ft{color:#8b5cc4}
+  .dash-sep{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#8b5cc4;font-weight:700;margin:6px 0 2px;padding-top:6px;border-top:1px solid var(--line)}
   .hidden{display:none}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="brand">
-    <h1>Práctica Mental</h1>
+    <h1>Kaizen</h1>
     <div class="nav">
       <button id="tabPractice" class="on">Practicar</button>
       <button id="tabDash">Progreso</button>
@@ -148,8 +169,26 @@
     </div>
   </div>
 
-  <!-- ===== HOME: elegir modo ===== -->
-  <section id="home">
+  <!-- ===== ROOT: elegir materia ===== -->
+  <section id="root">
+    <div class="card" style="display:flex;flex-direction:column;gap:12px">
+      <h2>Elegí una materia</h2>
+      <button class="modebtn subj-math" data-subject="math">
+        <span class="mi">+ − × ÷</span>
+        <span class="mt">Matemáticas</span>
+        <span class="md">Aritmética mental y operaciones con negativos</span>
+      </button>
+      <button class="modebtn subj-lang" data-subject="lang">
+        <span class="mi">Aa</span>
+        <span class="mt">Lengua Castellana</span>
+        <span class="md">Clases de palabras: sustantivo, adjetivo, artículo, verbo</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ===== HOME MATE: elegir modo ===== -->
+  <section id="home" class="hidden">
+    <button class="back" id="backRootFromHome">← Materias</button>
     <div class="card" style="display:flex;flex-direction:column;gap:12px">
       <h2>Elegí un modo</h2>
       <button class="modebtn" data-mode="mental">
@@ -352,23 +391,91 @@
 
   <!-- ===== FORMULAS ===== -->
   <section id="formulas" class="hidden">
-    <div class="card" style="margin-bottom:16px">
+    <div class="card" style="margin-bottom:16px" id="fBlockMental">
       <h2>Aritmética mental</h2>
       <div id="fMental"></div>
     </div>
-    <div class="card">
+    <div class="card" id="fBlockNeg" style="margin-bottom:16px">
       <h2>Aritmética con negativos</h2>
       <div id="fNeg"></div>
     </div>
+    <div class="card fcard-lang" id="fBlockLang">
+      <h2>Lengua · Clases de palabras</h2>
+      <div id="fLang"></div>
+    </div>
+  </section>
+
+  <!-- ===== SETUP LENGUA ===== -->
+  <section id="setupLang" class="hidden">
+    <button class="back" id="backRootFromLang">← Materias</button>
+    <div class="card" style="margin-bottom:16px">
+      <h2>Clases de palabras</h2>
+      <div class="ops" id="opsLang">
+        <div class="op on" data-op="sust"><span class="sym">📦</span><span class="lbl">Sustantivo</span></div>
+        <div class="op on" data-op="adj"><span class="sym">🎨</span><span class="lbl">Adjetivo</span></div>
+        <div class="op on" data-op="art"><span class="sym">🔖</span><span class="lbl">Artículo</span></div>
+        <div class="op on" data-op="verb"><span class="sym">⚡</span><span class="lbl">Verbo</span></div>
+      </div>
+      <div class="field">
+        <label>¿Cuántas frases?</label>
+        <div class="stepper">
+          <button id="minusL">−</button>
+          <input id="countL" type="number" inputmode="numeric" value="10" min="1" max="100">
+          <button id="plusL">+</button>
+        </div>
+        <div class="quick">
+          <button data-nl="5">5</button><button data-nl="10">10</button><button data-nl="20">20</button><button data-nl="40">40</button>
+        </div>
+      </div>
+    </div>
+    <button class="start" id="startBtnL">Empezar</button>
+  </section>
+
+  <!-- ===== PLAY LENGUA ===== -->
+  <section id="playLang" class="hidden">
+    <div class="playtop">
+      <span class="prog" id="progL">1 / 10</span>
+      <span class="clock" id="clockL">0.0s</span>
+      <button class="quit" id="quitL">✕</button>
+    </div>
+    <div class="bar"><div id="barFillL"></div></div>
+    <div class="card">
+      <div class="phrase-hint">Tocá una palabra y luego su caja. O arrastrala.</div>
+      <div class="words" id="words"></div>
+    </div>
+    <div class="boxes" id="boxes"></div>
+    <div class="explain hidden" id="explainL">
+      <div class="ex-head">Corrección</div>
+      <div class="ex-body" id="exBodyL"></div>
+      <button class="ex-cont" id="exContL">Continuar →</button>
+    </div>
+    <button class="start" id="checkL">Revisar</button>
+  </section>
+
+  <!-- ===== RESULTS LENGUA ===== -->
+  <section id="resultsLang" class="hidden">
+    <div class="card res">
+      <div class="big">
+        <div class="score"><span id="rlCorrect">0</span><small>/<span id="rlTotal">0</span></small></div>
+        <div class="sub" id="rlSub">palabras correctas</div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="k">Frases</div><div class="v" id="rlPhrases">0</div></div>
+        <div class="stat"><div class="k">Tiempo total</div><div class="v" id="rlTime">0s</div></div>
+      </div>
+      <div class="review" id="reviewL"></div>
+    </div>
+    <button class="start" id="againL">Otra ronda</button>
   </section>
 </div>
 
 <script>
 (function(){
   const $ = s => document.querySelector(s);
-  const SEC=['home','setup','setupNeg','play','results','dash','formulas'];
+  const SEC=['root','home','setup','setupNeg','play','results','dash','formulas','setupLang','playLang','resultsLang'];
   const secEl={};SEC.forEach(s=>secEl[s]=$('#'+s));
   function only(name){SEC.forEach(s=>secEl[s].classList.toggle('hidden', s!==name));}
+  let subject='root'; // 'root' | 'math' | 'lang' — contexto para Progreso/Fórmulas
 
   // ---------- constantes ----------
   const SYM={add:'+',sub:'−',mul:'×',div:'÷',pct:'%',nadd:'+',nsub:'−',nmul:'×',ndiv:'÷',nchain:'( )',nchainmd:'×÷',nchainmix:'±×'};
@@ -377,7 +484,7 @@
   const CATS_MENTAL=['add1','add2','add3','sub1','sub2','sub3','mul1','mul2','div1','div2','div3','pct1','pct2'];
   // categorías negativos
   const CATS_NEG=['nadd1','nadd2','nadd3','nsub1','nsub2','nsub3','nmul1','nmul2','ndiv1','ndiv2','nchain3','nchain4','nchain5','nchainmd3','nchainmd4','nchainmd5','nchainmix3','nchainmix4','nchainmix5'];
-  const CATS=[...CATS_MENTAL,...CATS_NEG];
+  // (CATS se define más abajo, tras las categorías de lengua)
   const CAT_INFO={
     add1:{op:'add',label:'0–99'},   add2:{op:'add',label:'100–499'}, add3:{op:'add',label:'500–999'},
     sub1:{op:'sub',label:'0–99'},   sub2:{op:'sub',label:'100–499'}, sub3:{op:'sub',label:'500–999'},
@@ -394,9 +501,16 @@
   };
   const OPS_MENTAL=['add','sub','mul','div','pct'];
   const OPS_NEG=['nadd','nsub','nmul','ndiv','nchain','nchainmd','nchainmix'];
+  // ---- lengua: clases de palabras ----
+  const LANG_TYPES=['sust','adj','art','verb'];         // los 4 que se practican
+  const LANG_NAME={sust:'Sustantivo',adj:'Adjetivo',art:'Artículo',verb:'Verbo',otra:'Otra'};
+  const CATS_LANG=['L_sust','L_adj','L_art','L_verb'];   // categorías de progreso (por tipo)
+  const CAT_LANG_INFO={L_sust:{label:'Sustantivo'},L_adj:{label:'Adjetivo'},L_art:{label:'Artículo'},L_verb:{label:'Verbo'}};
+  const typeToCat={sust:'L_sust',adj:'L_adj',art:'L_art',verb:'L_verb'};
+  const CATS=[...CATS_MENTAL,...CATS_NEG,...CATS_LANG];
   function catOf(op,val){return op+val;}
 
-  const KEY='practicaMental_v8';
+  const KEY='practicaMental_v9';
   function blankCats(){const o={};CATS.forEach(c=>o[c]=0);return o;}
   function blankData(){return {streak:blankCats(),best:blankCats(),total:blankCats(),days:{}};}
   function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(!d||!d.streak)return blankData();
@@ -844,6 +958,244 @@
     return {op,cat:catOf(op,dig),x:d.x,y:d.y,oper:d.oper,a:d.x,b:d.y,ans:d.ans,text:d.text};
   }
 
+  // ================= LENGUA: banco de frases =================
+  // cada palabra: [texto, tipo]. tipos: sust, adj, art, verb, otra
+  const PHRASES=[
+    [['El','art'],['perro','sust'],['es','verb'],['grande','adj']],
+    [['La','art'],['casa','sust'],['está','verb'],['limpia','adj']],
+    [['Un','art'],['gato','sust'],['negro','adj'],['duerme','verb']],
+    [['Luis','sust'],['corre','verb'],['rápido','adj']],
+    [['La','art'],['flor','sust'],['es','verb'],['bonita','adj']],
+    [['El','art'],['niño','sust'],['come','verb'],['una','art'],['manzana','sust']],
+    [['Mi','otra'],['hermana','sust'],['canta','verb'],['bien','otra']],
+    [['El','art'],['carro','sust'],['rojo','adj'],['es','verb'],['veloz','adj']],
+    [['Los','art'],['pájaros','sust'],['vuelan','verb'],['alto','otra']],
+    [['Ella','otra'],['tiene','verb'],['un','art'],['libro','sust'],['viejo','adj']],
+    [['La','art'],['comida','sust'],['está','verb'],['caliente','adj']],
+    [['Un','art'],['hombre','sust'],['alto','adj'],['camina','verb']],
+    [['El','art'],['cielo','sust'],['es','verb'],['azul','adj']],
+    [['María','sust'],['lee','verb'],['una','art'],['revista','sust']],
+    [['El','art'],['café','sust'],['está','verb'],['frío','adj']],
+    [['Los','art'],['zapatos','sust'],['nuevos','adj'],['son','verb'],['cómodos','adj']],
+    [['Mi','otra'],['perro','sust'],['ladra','verb'],['mucho','otra']],
+    [['La','art'],['montaña','sust'],['es','verb'],['enorme','adj']],
+    [['Un','art'],['río','sust'],['cristalino','adj'],['corre','verb'],['abajo','otra']],
+    [['El','art'],['profesor','sust'],['explica','verb'],['la','art'],['lección','sust']],
+    [['La','art'],['luna','sust'],['brilla','verb'],['esta','otra'],['noche','sust']],
+    [['Ese','otra'],['edificio','sust'],['es','verb'],['moderno','adj']],
+    [['El','art'],['agua','sust'],['fría','adj'],['refresca','verb']],
+    [['Una','art'],['mujer','sust'],['elegante','adj'],['entra','verb']],
+    [['Los','art'],['estudiantes','sust'],['leen','verb'],['mucho','otra']]
+  ];
+
+  // ================= LENGUA: setup =================
+  const selLang=new Set(['sust','adj','art','verb']);
+  let countL=10;
+  $('#opsLang').addEventListener('click',e=>{
+    const el=e.target.closest('.op');if(!el)return;
+    const op=el.dataset.op;
+    if(selLang.has(op)){if(selLang.size>1)selLang.delete(op);}else selLang.add(op);
+    document.querySelectorAll('#opsLang .op').forEach(x=>x.classList.toggle('on',selLang.has(x.dataset.op)));
+    $('#startBtnL').disabled=selLang.size===0;
+  });
+  const countLInput=$('#countL');
+  const clampL=n=>Math.max(1,Math.min(100,n||1));
+  $('#minusL').onclick=()=>{countL=clampL(countL-1);countLInput.value=countL};
+  $('#plusL').onclick =()=>{countL=clampL(countL+1);countLInput.value=countL};
+  countLInput.oninput=()=>{countL=clampL(parseInt(countLInput.value,10))};
+  countLInput.onblur =()=>{countLInput.value=countL};
+  document.querySelectorAll('#setupLang .quick button').forEach(b=>b.onclick=()=>{countL=clampL(parseInt(b.dataset.nl,10));countLInput.value=countL});
+
+  // ================= LENGUA: juego =================
+  // cajas visibles = tipos elegidos + "Otra" siempre
+  let langPhrases=[],lIdx=0,lLog=[],lStart=0,lPhraseStart=0,lTick=null;
+  let placement={}; // wordIndex -> boxType
+  let selectedWord=null;
+  let lPhraseCorrect=0,lPhraseTotal=0;
+
+  function startLang(){
+    // arma la ronda: elige frases al azar del banco
+    langPhrases=[];
+    const shuffled=[...PHRASES].sort(()=>Math.random()-0.5);
+    for(let i=0;i<countL;i++) langPhrases.push(shuffled[i%shuffled.length]);
+    lIdx=0;lLog=[];lPhraseCorrect=0;lPhraseTotal=0;
+    only('playLang');
+    lStart=performance.now();
+    clearInterval(lTick);
+    lTick=setInterval(()=>{$('#clockL').textContent=((performance.now()-lStart)/1000).toFixed(1)+'s'},100);
+    showPhrase();
+  }
+  function boxTypesForRound(){
+    // cajas de los tipos elegidos, en orden fijo, + Otra al final
+    const order=['art','sust','adj','verb'];
+    const boxes=order.filter(t=>selLang.has(t));
+    boxes.push('otra');
+    return boxes;
+  }
+  function showPhrase(){
+    const phrase=langPhrases[lIdx];
+    placement={};selectedWord=null;
+    $('#progL').textContent=`${lIdx+1} / ${langPhrases.length}`;
+    $('#barFillL').style.width=(lIdx/langPhrases.length*100)+'%';
+    // palabras
+    const wc=$('#words');wc.innerHTML='';
+    phrase.forEach((w,i)=>{
+      const el=document.createElement('div');el.className='word';el.textContent=w[0];el.dataset.i=i;
+      el.setAttribute('draggable','true');
+      wc.appendChild(el);
+    });
+    // cajas
+    const bc=$('#boxes');bc.innerHTML='';
+    boxTypesForRound().forEach(t=>{
+      const box=document.createElement('div');box.className='box';box.dataset.type=t;
+      box.innerHTML=`<div class="box-t">${LANG_NAME[t]}</div><div class="drop"></div>`;
+      bc.appendChild(box);
+    });
+    $('#explainL').classList.add('hidden');
+    $('#checkL').classList.remove('hidden');
+    lPhraseStart=performance.now();
+  }
+  // selección tap-tap
+  $('#words').addEventListener('click',e=>{
+    const w=e.target.closest('.word');if(!w||w.classList.contains('placed'))return;
+    if(selectedWord===w){w.classList.remove('sel');selectedWord=null;return;}
+    if(selectedWord)selectedWord.classList.remove('sel');
+    selectedWord=w;w.classList.add('sel');
+  });
+  $('#boxes').addEventListener('click',e=>{
+    const box=e.target.closest('.box');
+    const chip=e.target.closest('.chip');
+    if(chip){ // sacar una palabra de la caja de vuelta
+      const wi=parseInt(chip.dataset.wi,10);
+      delete placement[wi];
+      document.querySelector(`.word[data-i="${wi}"]`).classList.remove('placed');
+      renderPlacements();
+      return;
+    }
+    if(box && selectedWord){
+      const wi=parseInt(selectedWord.dataset.i,10);
+      placement[wi]=box.dataset.type;
+      selectedWord.classList.remove('sel');selectedWord.classList.add('placed');
+      selectedWord=null;
+      renderPlacements();
+    }
+  });
+  function renderPlacements(){
+    document.querySelectorAll('#boxes .drop').forEach(d=>d.innerHTML='');
+    const phrase=langPhrases[lIdx];
+    Object.keys(placement).forEach(wi=>{
+      const t=placement[wi];
+      const box=document.querySelector(`.box[data-type="${t}"] .drop`);
+      if(box){const chip=document.createElement('div');chip.className='chip';chip.textContent=phrase[wi][0];chip.dataset.wi=wi;box.appendChild(chip);}
+    });
+  }
+  // drag & drop (extra, encima del tap-tap)
+  let dragWi=null;
+  $('#words').addEventListener('dragstart',e=>{const w=e.target.closest('.word');if(!w||w.classList.contains('placed')){e.preventDefault();return;}dragWi=parseInt(w.dataset.i,10);w.classList.add('dragging');});
+  $('#words').addEventListener('dragend',e=>{const w=e.target.closest('.word');if(w)w.classList.remove('dragging');});
+  $('#boxes').addEventListener('dragover',e=>{e.preventDefault();const box=e.target.closest('.box');document.querySelectorAll('#boxes .box').forEach(b=>b.classList.remove('hot'));if(box)box.classList.add('hot');});
+  $('#boxes').addEventListener('dragleave',e=>{const box=e.target.closest('.box');if(box)box.classList.remove('hot');});
+  $('#boxes').addEventListener('drop',e=>{
+    e.preventDefault();
+    const box=e.target.closest('.box');if(!box||dragWi===null)return;
+    box.classList.remove('hot');
+    placement[dragWi]=box.dataset.type;
+    const w=document.querySelector(`.word[data-i="${dragWi}"]`);if(w)w.classList.add('placed');
+    dragWi=null;renderPlacements();
+  });
+
+  let lPhraseEvaluated=false;
+  function checkPhrase(){
+    const phrase=langPhrases[lIdx];
+    if(Object.keys(placement).length<phrase.length){
+      $('#exBodyL').innerHTML='Faltan palabras por colocar. Poné todas en una caja (usá <b>Otra</b> si no es ninguno de los tipos).';
+      $('#explainL').classList.remove('hidden');
+      $('#checkL').classList.add('hidden');
+      lPhraseEvaluated=false;
+      return;
+    }
+    const took=(performance.now()-lPhraseStart)/1000;
+    let wordCorrect=0, errors=[];
+    phrase.forEach((w,i)=>{
+      const correct=w[1];
+      const chosen=placement[i];
+      let expectedBox;
+      if(LANG_TYPES.includes(correct) && selLang.has(correct)) expectedBox=correct;
+      else expectedBox='otra';
+      const ok = chosen===expectedBox;
+      if(ok)wordCorrect++;
+      if(LANG_TYPES.includes(correct) && selLang.has(correct)){
+        record(typeToCat[correct], ok);
+      }
+      if(!ok) errors.push({word:w[0],chosen,correct,expectedBox});
+    });
+    lPhraseTotal+=phrase.length;
+    lPhraseCorrect+=wordCorrect;
+    const allOk = wordCorrect===phrase.length;
+    lLog.push({phrase,wordCorrect,total:phrase.length,allOk,took});
+    lPhraseEvaluated=true;
+    document.querySelectorAll('#boxes .box').forEach(box=>{
+      const t=box.dataset.type;
+      const chips=[...box.querySelectorAll('.chip')].map(c=>parseInt(c.dataset.wi,10));
+      let boxOk=true;
+      chips.forEach(wi=>{
+        const correct=phrase[wi][1];
+        let eb = (LANG_TYPES.includes(correct)&&selLang.has(correct))?correct:'otra';
+        if(eb!==t)boxOk=false;
+      });
+      box.classList.add(boxOk?'ok':'err');
+    });
+    if(allOk){
+      setTimeout(()=>{lIdx++;lIdx>=langPhrases.length?finishLang():showPhrase();},500);
+    }else{
+      let html='';
+      errors.forEach(er=>{
+        html+=`<div style="margin-bottom:6px"><b>${er.word}</b>: la pusiste en ${LANG_NAME[er.chosen]}, pero es ${er.correct==='otra'?'otra clase (no es sustantivo/adjetivo/artículo/verbo)':LANG_NAME[er.correct]}. ${whyType(er.word,er.correct)}</div>`;
+      });
+      $('#exBodyL').innerHTML=html;
+      $('#explainL').classList.remove('hidden');
+      $('#checkL').classList.add('hidden');
+    }
+  }
+  function whyType(word,type){
+    const reasons={
+      sust:'Es el nombre de una cosa, persona o idea.',
+      adj:'Dice cómo es algo (cualidad).',
+      art:'Es la palabrita que va antes del sustantivo (el, la, un, una, los, las).',
+      verb:'Es una acción o estado (lo que hace o cómo está algo).',
+      otra:'Es un adverbio, pronombre, preposición o posesivo — todavía no entra en los 4 tipos que practicás.'
+    };
+    return reasons[type]||'';
+  }
+  function continueLang(){
+    $('#explainL').classList.add('hidden');
+    $('#checkL').classList.remove('hidden');
+    if(lPhraseEvaluated){ lPhraseEvaluated=false; lIdx++; lIdx>=langPhrases.length?finishLang():showPhrase(); }
+  }
+  function finishLang(){
+    clearInterval(lTick);
+    $('#barFillL').style.width='100%';
+    only('resultsLang');
+    const total=(performance.now()-lStart)/1000;
+    $('#rlCorrect').textContent=lPhraseCorrect;
+    $('#rlTotal').textContent=lPhraseTotal;
+    $('#rlSub').textContent = lPhraseCorrect===lPhraseTotal?'perfecto':`${lPhraseTotal-lPhraseCorrect} falladas`;
+    $('#rlPhrases').textContent=lLog.length;
+    $('#rlTime').textContent=fmt(total);
+    const rev=$('#reviewL');rev.innerHTML='';
+    lLog.forEach(x=>{
+      const txt=x.phrase.map(w=>w[0]).join(' ');
+      const d=document.createElement('div');d.className='rev'+(x.allOk?'':' miss');
+      d.innerHTML=`<span class="exp">${txt}</span><span>${x.wordCorrect}/${x.total} ${x.allOk?'<span class="tick">✓</span>':''}</span>`;
+      rev.appendChild(d);
+    });
+  }
+  $('#checkL').onclick=checkPhrase;
+  $('#exContL').onclick=continueLang;
+  $('#quitL').onclick=()=>{clearInterval(lTick);only('setupLang');};
+  $('#startBtnL').onclick=startLang;
+  $('#againL').onclick=()=>only('setupLang');
+
   // ================= JUEGO =================
   let probs=[],idx=0,log=[],tStart=0,qStart=0,tickTimer=null,mode='mental',allowNeg=false;
   function startGame(m){
@@ -961,30 +1313,59 @@
     nchainmd:['nchainmd3','nchainmd4','nchainmd5'],
     nchainmix:['nchainmix3','nchainmix4','nchainmix5']
   };
-  const ALL_DASH_OPS=[...OPS_MENTAL,...OPS_NEG];
+  const MATH_DASH_OPS=[...OPS_MENTAL,...OPS_NEG];
   function statBlock(op,field){
     const rows=CATS_BY_OP[op].map(c=>{const v=DATA[field][c];
       return `<div class="gcell"><span class="gl">${CAT_INFO[c].label}</span><span class="gv ${v===0?'z':''}">${v}</span></div>`;}).join('');
     return `<div class="grp"><div class="grp-h">${SYM[op]} ${NAME[op]}</div><div class="grp-cells">${rows}</div></div>`;
   }
+  function langStatBlock(field){
+    const rows=CATS_LANG.map(c=>{const v=DATA[field][c]||0;
+      return `<div class="gcell"><span class="gl">${CAT_LANG_INFO[c].label}</span><span class="gv ${v===0?'z':''}">${v}</span></div>`;}).join('');
+    return `<div class="grp"><div class="grp-h">Aa Clases de palabras</div><div class="grp-cells">${rows}</div></div>`;
+  }
   function renderDash(){
-    $('#totRow').innerHTML=ALL_DASH_OPS.map(op=>statBlock(op,'total')).join('');
-    $('#bestRow').innerHTML=ALL_DASH_OPS.map(op=>statBlock(op,'best')).join('');
+    // según contexto: root=todo, math=solo mate, lang=solo lengua
+    const showMath = subject!=='lang';
+    const showLang = subject!=='math';
+    let totHtml='', bestHtml='';
+    if(showMath){ totHtml+=MATH_DASH_OPS.map(op=>statBlock(op,'total')).join(''); bestHtml+=MATH_DASH_OPS.map(op=>statBlock(op,'best')).join(''); }
+    if(showLang){
+      if(showMath){ totHtml+='<div class="dash-sep">Lengua Castellana</div>'; bestHtml+='<div class="dash-sep">Lengua Castellana</div>'; }
+      totHtml+=langStatBlock('total'); bestHtml+=langStatBlock('best');
+    }
+    $('#totRow').innerHTML=totHtml;
+    $('#bestRow').innerHTML=bestHtml;
+    // días
+    const opsForDays = showMath ? MATH_DASH_OPS : [];
     const dl=$('#dayList');dl.innerHTML='';
     const keys=Object.keys(DATA.days).sort().reverse();
     if(keys.length===0){dl.innerHTML='<div class="empty">Todavía no hay días registrados.</div>';return;}
     const tk=todayKey();
     keys.forEach(k=>{
       const day=DATA.days[k];
-      const dtot=CATS.reduce((s,c)=>s+(day[c]||0),0);
+      const relevant = [...(showMath?MATH_DASH_OPS.flatMap(op=>CATS_BY_OP[op]):[]),...(showLang?CATS_LANG:[])];
+      const dtot=relevant.reduce((s,c)=>s+(day[c]||0),0);
+      if(dtot===0)return;
       const d=document.createElement('div');d.className='day';
-      const groups=ALL_DASH_OPS.map(op=>{
-        const sum=CATS_BY_OP[op].reduce((s,c)=>s+(day[c]||0),0);
-        if(sum===0)return '';  // no mostrar operaciones sin actividad ese día
-        const cells=CATS_BY_OP[op].map(c=>{const v=day[c]||0;
-          return `<div class="cell"><div class="cn">${CAT_INFO[c].label}</div><div class="cv ${v===0?'z':''}">${v}</div></div>`;}).join('');
-        return `<div class="dgrp"><div class="dgrp-h">${SYM[op]} ${NAME[op]}</div><div class="cells">${cells}</div></div>`;
-      }).join('');
+      let groups='';
+      if(showMath){
+        groups+=opsForDays.map(op=>{
+          const sum=CATS_BY_OP[op].reduce((s,c)=>s+(day[c]||0),0);
+          if(sum===0)return '';
+          const cells=CATS_BY_OP[op].map(c=>{const v=day[c]||0;
+            return `<div class="cell"><div class="cn">${CAT_INFO[c].label}</div><div class="cv ${v===0?'z':''}">${v}</div></div>`;}).join('');
+          return `<div class="dgrp"><div class="dgrp-h">${SYM[op]} ${NAME[op]}</div><div class="cells">${cells}</div></div>`;
+        }).join('');
+      }
+      if(showLang){
+        const sum=CATS_LANG.reduce((s,c)=>s+(day[c]||0),0);
+        if(sum>0){
+          const cells=CATS_LANG.map(c=>{const v=day[c]||0;
+            return `<div class="cell"><div class="cn">${CAT_LANG_INFO[c].label}</div><div class="cv ${v===0?'z':''}">${v}</div></div>`;}).join('');
+          groups+=`<div class="dgrp"><div class="dgrp-h">Aa Clases de palabras</div><div class="cells">${cells}</div></div>`;
+        }
+      }
       d.innerHTML=`<div class="dh"><span class="date ${k===tk?'today':''}">${k===tk?'Hoy · '+prettyDate(k):prettyDate(k)}</span><span class="dtot">${dtot} total</span></div>${groups}`;
       dl.appendChild(d);
     });
@@ -1006,37 +1387,60 @@
     {t:'Multiplicación y división',b:'Hacés la operación normal y multiplicás los signos (ley universal). <span class="ex">−4 × −3 = 12</span> · <span class="ex">−12 ÷ 3 = −4</span> · <span class="ex">6 × −5 = −30</span>'},
     {t:'Jerarquía de operaciones',b:'Se resuelve en este orden:<br>1. Paréntesis ( )<br>2. Potencias y raíces (3², √)<br>3. Multiplicación y división (× ÷)<br>4. Sumas y restas (+ −)<br><span class="ex">−3 + 4 × (−2) = −3 + (−8) = −11</span>'}
   ];
+  const FORMULAS_LANG=[
+    {t:'Sustantivo',b:'Es el nombre de una cosa, persona, lugar o idea. <span class="ex">perro, mesa, Luis, amor</span>'},
+    {t:'Adjetivo',b:'Dice cómo es esa cosa (su cualidad). <span class="ex">grande, rojo, feo, bonito</span>'},
+    {t:'Artículo',b:'Es la palabrita que va antes del nombre. <span class="ex">el, la, un, una, los, las</span>'},
+    {t:'Verbo',b:'Es lo que hace o el estado de algo (acción o estado). <span class="ex">correr, comer, ser, es, está</span>'},
+    {t:'Todo junto',b:'<span class="ex">El perro es grande</span> → El = artículo · perro = sustantivo · es = verbo · grande = adjetivo'}
+  ];
   function renderFormulas(){
     $('#fMental').innerHTML=FORMULAS_MENTAL.map(f=>`<div class="formula"><div class="ft">${f.t}</div><div class="fb">${f.b}</div></div>`).join('');
     $('#fNeg').innerHTML=FORMULAS_NEG.map(f=>`<div class="formula"><div class="ft">${f.t}</div><div class="fb">${f.b}</div></div>`).join('');
+    $('#fLang').innerHTML=FORMULAS_LANG.map(f=>`<div class="formula"><div class="ft">${f.t}</div><div class="fb">${f.b}</div></div>`).join('');
+    // visibilidad según contexto
+    const showMath = subject!=='lang';
+    const showLang = subject!=='math';
+    $('#fBlockMental').classList.toggle('hidden',!showMath);
+    $('#fBlockNeg').classList.toggle('hidden',!showMath);
+    $('#fBlockLang').classList.toggle('hidden',!showLang);
   }
 
   // ================= NAV =================
-  let lastSetup='home'; // a dónde vuelve "Practicar"
-  function goPractice(){
-    $('#tabPractice').classList.add('on');$('#tabDash').classList.remove('on');$('#tabFormulas').classList.remove('on');
-    only(lastSetup);
+  // a dónde vuelve "Practicar" según materia
+  function practiceHome(){
+    if(subject==='math')return 'home';
+    if(subject==='lang')return 'setupLang';
+    return 'root';
   }
-  function goDash(){
-    $('#tabDash').classList.add('on');$('#tabPractice').classList.remove('on');$('#tabFormulas').classList.remove('on');
-    renderDash();only('dash');
+  function setTab(tab){
+    $('#tabPractice').classList.toggle('on',tab==='practice');
+    $('#tabDash').classList.toggle('on',tab==='dash');
+    $('#tabFormulas').classList.toggle('on',tab==='formulas');
   }
-  function goFormulas(){
-    $('#tabFormulas').classList.add('on');$('#tabPractice').classList.remove('on');$('#tabDash').classList.remove('on');
-    renderFormulas();only('formulas');
-  }
+  function goPractice(){ setTab('practice'); only(practiceHome()); }
+  function goDash(){ setTab('dash'); renderDash(); only('dash'); }
+  function goFormulas(){ setTab('formulas'); renderFormulas(); only('formulas'); }
   $('#tabPractice').onclick=goPractice;
   $('#tabDash').onclick=goDash;
   $('#tabFormulas').onclick=goFormulas;
 
-  // modo desde home
-  document.querySelectorAll('.modebtn').forEach(b=>b.onclick=()=>{
-    const m=b.dataset.mode;
-    lastSetup = m==='neg' ? 'setupNeg' : 'setup';
-    only(lastSetup);
+  // elegir materia desde root
+  document.querySelectorAll('.modebtn[data-subject]').forEach(b=>b.onclick=()=>{
+    subject=b.dataset.subject;
+    setTab('practice');
+    only(subject==='math'?'home':'setupLang');
   });
-  $('#backMental').onclick=()=>{lastSetup='home';only('home')};
-  $('#backNeg').onclick=()=>{lastSetup='home';only('home')};
+  // elegir modo (mate) desde home
+  document.querySelectorAll('.modebtn[data-mode]').forEach(b=>b.onclick=()=>{
+    const m=b.dataset.mode;
+    only(m==='neg'?'setupNeg':'setup');
+  });
+  // volver atrás
+  $('#backMental').onclick=()=>only('home');
+  $('#backNeg').onclick=()=>only('home');
+  $('#backRootFromHome').onclick=()=>{subject='root';only('root')};
+  $('#backRootFromLang').onclick=()=>{subject='root';only('root')};
 
   $('#reset').onclick=()=>{if(confirm('¿Borrar TODO el progreso? Rachas, totales y días. No se puede deshacer.')){DATA=blankData();save();renderDash();}};
   $('#startBtn').onclick=()=>startGame('mental');
@@ -1045,7 +1449,8 @@
 
   // init
   renderOps();
-  only('home');
+  subject='root';
+  only('root');
 })();
 </script>
 </body>
