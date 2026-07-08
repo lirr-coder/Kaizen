@@ -231,11 +231,18 @@
       <div class="ops" id="opsNeg">
         <div class="op on" data-op="nadd"><span class="sym">+</span><span class="lbl">Suma</span></div>
         <div class="op" data-op="nsub"><span class="sym">−</span><span class="lbl">Resta</span></div>
+        <div class="op" data-op="nchain"><span class="sym">( )</span><span class="lbl">Cadena</span></div>
       </div>
       <div class="field cfg show" id="cfgNeg">
-        <label>Cantidad de dígitos</label>
+        <label>Cantidad de dígitos (suma / resta)</label>
         <div class="seg multi" data-cfg="neg">
           <button data-r="1" class="on">1 díg</button><button data-r="2">2 díg</button><button data-r="3">3 díg</button>
+        </div>
+      </div>
+      <div class="field cfg" id="cfgChain">
+        <label>Términos de la cadena</label>
+        <div class="seg multi" data-cfg="chain">
+          <button data-r="3" class="on">3 términos</button><button data-r="4">4 términos</button><button data-r="5">5 términos</button>
         </div>
       </div>
       <div class="field">
@@ -336,12 +343,12 @@
   function only(name){SEC.forEach(s=>secEl[s].classList.toggle('hidden', s!==name));}
 
   // ---------- constantes ----------
-  const SYM={add:'+',sub:'−',mul:'×',div:'÷',pct:'%',nadd:'+',nsub:'−'};
-  const NAME={add:'Suma',sub:'Resta',mul:'Mult',div:'División',pct:'Porcentaje',nadd:'Suma −',nsub:'Resta −'};
+  const SYM={add:'+',sub:'−',mul:'×',div:'÷',pct:'%',nadd:'+',nsub:'−',nchain:'( )'};
+  const NAME={add:'Suma',sub:'Resta',mul:'Mult',div:'División',pct:'Porcentaje',nadd:'Suma −',nsub:'Resta −',nchain:'Cadena'};
   // categorías mentales
   const CATS_MENTAL=['add1','add2','add3','sub1','sub2','sub3','mul1','mul2','div1','div2','div3','pct1','pct2'];
   // categorías negativos
-  const CATS_NEG=['nadd1','nadd2','nadd3','nsub1','nsub2','nsub3'];
+  const CATS_NEG=['nadd1','nadd2','nadd3','nsub1','nsub2','nsub3','nchain3','nchain4','nchain5'];
   const CATS=[...CATS_MENTAL,...CATS_NEG];
   const CAT_INFO={
     add1:{op:'add',label:'0–99'},   add2:{op:'add',label:'100–499'}, add3:{op:'add',label:'500–999'},
@@ -350,13 +357,14 @@
     div1:{op:'div',label:'2÷1'},    div2:{op:'div',label:'3÷1'},     div3:{op:'div',label:'3÷2'},
     pct1:{op:'pct',label:'2 díg'},  pct2:{op:'pct',label:'3 díg'},
     nadd1:{op:'nadd',label:'1 díg'},nadd2:{op:'nadd',label:'2 díg'}, nadd3:{op:'nadd',label:'3 díg'},
-    nsub1:{op:'nsub',label:'1 díg'},nsub2:{op:'nsub',label:'2 díg'}, nsub3:{op:'nsub',label:'3 díg'}
+    nsub1:{op:'nsub',label:'1 díg'},nsub2:{op:'nsub',label:'2 díg'}, nsub3:{op:'nsub',label:'3 díg'},
+    nchain3:{op:'nchain',label:'3 térm'},nchain4:{op:'nchain',label:'4 térm'},nchain5:{op:'nchain',label:'5 térm'}
   };
   const OPS_MENTAL=['add','sub','mul','div','pct'];
-  const OPS_NEG=['nadd','nsub'];
+  const OPS_NEG=['nadd','nsub','nchain'];
   function catOf(op,val){return op+val;}
 
-  const KEY='practicaMental_v5';
+  const KEY='practicaMental_v6';
   function blankCats(){const o={};CATS.forEach(c=>o[c]=0);return o;}
   function blankData(){return {streak:blankCats(),best:blankCats(),total:blankCats(),days:{}};}
   function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(!d||!d.streak)return blankData();
@@ -426,19 +434,30 @@
   // ================= MODO NEGATIVOS =================
   const selNeg=new Set(['nadd']);
   let countN=10;
-  const cfgNeg=new Set([1]);
-  $('#cfgNeg .seg.multi').addEventListener('click',e=>{
-    const b=e.target.closest('button');if(!b)return;
-    const r=parseInt(b.dataset.r,10);
-    if(cfgNeg.has(r)){if(cfgNeg.size>1)cfgNeg.delete(r);}else cfgNeg.add(r);
-    e.currentTarget.querySelectorAll('button').forEach(x=>x.classList.toggle('on',cfgNeg.has(parseInt(x.dataset.r,10))));
+  const cfgNeg=new Set([1]);      // dígitos para suma/resta
+  const cfgChain=new Set([3]);    // términos para cadena
+  document.querySelectorAll('#setupNeg .seg.multi').forEach(seg=>{
+    seg.addEventListener('click',e=>{
+      const b=e.target.closest('button');if(!b)return;
+      const which=seg.dataset.cfg,r=parseInt(b.dataset.r,10);
+      const set = which==='chain' ? cfgChain : cfgNeg;
+      if(set.has(r)){if(set.size>1)set.delete(r);}else set.add(r);
+      seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',set.has(parseInt(x.dataset.r,10))));
+    });
   });
+  function renderNegCfgVisibility(){
+    // muestra selector de dígitos si hay suma o resta; selector de términos si hay cadena
+    const hasBasic=selNeg.has('nadd')||selNeg.has('nsub');
+    $('#cfgNeg').classList.toggle('show',hasBasic);
+    $('#cfgChain').classList.toggle('show',selNeg.has('nchain'));
+  }
   $('#opsNeg').addEventListener('click',e=>{
     const el=e.target.closest('.op');if(!el)return;
     const op=el.dataset.op;
     if(selNeg.has(op)){if(selNeg.size>1)selNeg.delete(op);}else selNeg.add(op);
     document.querySelectorAll('#opsNeg .op').forEach(x=>x.classList.toggle('on',selNeg.has(x.dataset.op)));
     $('#startBtnN').disabled=selNeg.size===0;
+    renderNegCfgVisibility();
   });
   const countNInput=$('#countN');
   $('#minusN').onclick=()=>{countN=clamp(countN-1);countNInput.value=countN};
@@ -480,6 +499,29 @@
     else { secondTxt = Math.random()<0.25 ? `(${y})` : `${y}`; }
     const text = `${x} ${oper} ${secondTxt}`;
     return {x,y,oper,ans,text};
+  }
+  function makeChain(nTerms){
+    // nTerms términos de 1..20, signo aleatorio, operadores + / − entre ellos
+    // primer término: puede ser negativo (sin paréntesis, va con su signo al frente)
+    const terms=[]; // {val: número con signo}
+    for(let i=0;i<nTerms;i++){
+      const mag=rnd(1,20);
+      const sign=Math.random()<0.5?-1:1;
+      terms.push(mag*sign);
+    }
+    const ops=[]; // operador visible antes de cada término (excepto el primero)
+    for(let i=1;i<nTerms;i++) ops.push(Math.random()<0.5?'+':'−');
+    // resultado: primer término + aplicar cada operador al término siguiente
+    let ans=terms[0];
+    for(let i=1;i<nTerms;i++){ ans = ops[i-1]==='+' ? ans+terms[i] : ans-terms[i]; }
+    // texto de presentación
+    let text = `${terms[0]}`;                 // primer término con su signo tal cual
+    for(let i=1;i<nTerms;i++){
+      const t=terms[i];
+      const shown = t<0 ? `(${t})` : `${t}`;  // negativos siempre con paréntesis
+      text += ` ${ops[i-1]} ${shown}`;
+    }
+    return {terms,ops,ans,text};
   }
 
   // ---------- explicaciones mentales ----------
@@ -564,6 +606,32 @@
     }
     return steps.join(' ');
   }
+  function explainChain(p){
+    const {terms,ops}=p;
+    // fase 1: línea con signos ya destruidos (cada término como suma/resta simple)
+    // operador efectivo = combinar operador visible con el signo del término
+    let clean=`${terms[0]}`;
+    let effOps=[]; // '+' o '−' efectivo, y magnitud
+    for(let i=1;i<terms.length;i++){
+      const vis=ops[i-1], t=terms[i];
+      // + y + = + ; + y − = − ; − y + = − ; − y − = +
+      let eff;
+      if(vis==='+') eff = t<0 ? '−' : '+';
+      else          eff = t<0 ? '+' : '−';   // resta
+      effOps.push({eff,mag:Math.abs(t)});
+      clean += ` ${eff} ${Math.abs(t)}`;
+    }
+    // fase 2: acumular izquierda a derecha
+    let acc=terms[0];
+    let accSteps=[`${terms[0]}`];
+    effOps.forEach(({eff,mag})=>{
+      acc = eff==='+' ? acc+mag : acc-mag;
+      accSteps.push(`${eff} ${mag} = ${acc}`);
+    });
+    return `Destruís los signos: <b>${clean}</b>. `+
+           `Resolvés de izquierda a derecha: ${accSteps.join(' → ')}. `+
+           `Resultado: <b>${acc}</b>.`;
+  }
 
   function explainFor(p){
     if(p.op==='add')return explainAdd(p.a,p.b);
@@ -571,6 +639,7 @@
     if(p.op==='mul')return explainMul(p.a,p.b);
     if(p.op==='pct')return explainPct(p.a,p.b);
     if(p.op==='nadd'||p.op==='nsub')return explainNeg(p);
+    if(p.op==='nchain')return explainChain(p);
     if(p.b>=10)return explainDivEstimate(p.a,p.b);
     return explainDivDigit(p.a,p.b);
   }
@@ -589,6 +658,11 @@
   }
   function makeProblemNeg(){
     const op=pick([...selNeg]);
+    if(op==='nchain'){
+      const n=pick([...cfgChain]);
+      const d=makeChain(n);
+      return {op,cat:catOf('nchain',n),terms:d.terms,ops:d.ops,ans:d.ans,text:d.text};
+    }
     const dig=pick([...cfgNeg]);
     const d=makeNeg(op,dig);
     return {op,cat:catOf(op,dig),x:d.x,y:d.y,oper:d.oper,a:d.x,b:d.y,ans:d.ans,text:d.text};
@@ -612,6 +686,9 @@
   function showProblem(){
     const p=probs[idx];
     $('#qText').textContent=p.text;$('#qText').className='q';
+    // texto largo (cadenas) → fuente más chica para que quepa
+    if(p.text.length>14) $('#qText').style.fontSize = p.text.length>24 ? '26px' : '32px';
+    else $('#qText').style.fontSize='';
     $('#prog').textContent=`${idx+1} / ${probs.length}`;
     $('#barFill').style.width=(idx/probs.length*100)+'%';
     $('#live').innerHTML=`racha ${NAME[p.op]} ${CAT_INFO[p.cat].label}: <b>${DATA.streak[p.cat]}</b>`;
@@ -702,7 +779,8 @@
   const CATS_BY_OP={
     add:['add1','add2','add3'],sub:['sub1','sub2','sub3'],mul:['mul1','mul2'],
     div:['div1','div2','div3'],pct:['pct1','pct2'],
-    nadd:['nadd1','nadd2','nadd3'],nsub:['nsub1','nsub2','nsub3']
+    nadd:['nadd1','nadd2','nadd3'],nsub:['nsub1','nsub2','nsub3'],
+    nchain:['nchain3','nchain4','nchain5']
   };
   const ALL_DASH_OPS=[...OPS_MENTAL,...OPS_NEG];
   function statBlock(op,field){
