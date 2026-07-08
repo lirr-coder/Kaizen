@@ -231,7 +231,11 @@
       <div class="ops" id="opsNeg">
         <div class="op on" data-op="nadd"><span class="sym">+</span><span class="lbl">Suma</span></div>
         <div class="op" data-op="nsub"><span class="sym">−</span><span class="lbl">Resta</span></div>
-        <div class="op" data-op="nchain"><span class="sym">( )</span><span class="lbl">Cadena</span></div>
+        <div class="op" data-op="nmul"><span class="sym">×</span><span class="lbl">Multiplicación</span></div>
+        <div class="op" data-op="ndiv"><span class="sym">÷</span><span class="lbl">División</span></div>
+        <div class="op" data-op="nchain"><span class="sym">( )</span><span class="lbl">Cadena +−</span></div>
+        <div class="op" data-op="nchainmd"><span class="sym">×÷</span><span class="lbl">Cadena ×÷</span></div>
+        <div class="op" data-op="nchainmix"><span class="sym">±×</span><span class="lbl">Cadena mixta</span></div>
       </div>
       <div class="field cfg show" id="cfgNeg">
         <label>Cantidad de dígitos (suma / resta)</label>
@@ -239,9 +243,33 @@
           <button data-r="1" class="on">1 díg</button><button data-r="2">2 díg</button><button data-r="3">3 díg</button>
         </div>
       </div>
+      <div class="field cfg" id="cfgMulNeg">
+        <label>Formato multiplicación</label>
+        <div class="seg multi" data-cfg="nmul">
+          <button data-r="1" class="on">1 × 1</button><button data-r="2">2 × 1</button>
+        </div>
+      </div>
+      <div class="field cfg" id="cfgDivNeg">
+        <label>Formato división</label>
+        <div class="seg multi" data-cfg="ndiv">
+          <button data-r="1" class="on">1 ÷ 1</button><button data-r="2">2 ÷ 1</button>
+        </div>
+      </div>
       <div class="field cfg" id="cfgChain">
-        <label>Términos de la cadena</label>
+        <label>Términos cadena +−</label>
         <div class="seg multi" data-cfg="chain">
+          <button data-r="3" class="on">3 términos</button><button data-r="4">4 términos</button><button data-r="5">5 términos</button>
+        </div>
+      </div>
+      <div class="field cfg" id="cfgChainMd">
+        <label>Términos cadena ×÷</label>
+        <div class="seg multi" data-cfg="chainmd">
+          <button data-r="3" class="on">3 términos</button><button data-r="4">4 términos</button><button data-r="5">5 términos</button>
+        </div>
+      </div>
+      <div class="field cfg" id="cfgChainMix">
+        <label>Términos cadena mixta</label>
+        <div class="seg multi" data-cfg="chainmix">
           <button data-r="3" class="on">3 términos</button><button data-r="4">4 términos</button><button data-r="5">5 términos</button>
         </div>
       </div>
@@ -343,12 +371,12 @@
   function only(name){SEC.forEach(s=>secEl[s].classList.toggle('hidden', s!==name));}
 
   // ---------- constantes ----------
-  const SYM={add:'+',sub:'−',mul:'×',div:'÷',pct:'%',nadd:'+',nsub:'−',nchain:'( )'};
-  const NAME={add:'Suma',sub:'Resta',mul:'Mult',div:'División',pct:'Porcentaje',nadd:'Suma −',nsub:'Resta −',nchain:'Cadena'};
+  const SYM={add:'+',sub:'−',mul:'×',div:'÷',pct:'%',nadd:'+',nsub:'−',nmul:'×',ndiv:'÷',nchain:'( )',nchainmd:'×÷',nchainmix:'±×'};
+  const NAME={add:'Suma',sub:'Resta',mul:'Mult',div:'División',pct:'Porcentaje',nadd:'Suma −',nsub:'Resta −',nmul:'Mult −',ndiv:'Div −',nchain:'Cadena +−',nchainmd:'Cadena ×÷',nchainmix:'Cadena mixta'};
   // categorías mentales
   const CATS_MENTAL=['add1','add2','add3','sub1','sub2','sub3','mul1','mul2','div1','div2','div3','pct1','pct2'];
   // categorías negativos
-  const CATS_NEG=['nadd1','nadd2','nadd3','nsub1','nsub2','nsub3','nchain3','nchain4','nchain5'];
+  const CATS_NEG=['nadd1','nadd2','nadd3','nsub1','nsub2','nsub3','nmul1','nmul2','ndiv1','ndiv2','nchain3','nchain4','nchain5','nchainmd3','nchainmd4','nchainmd5','nchainmix3','nchainmix4','nchainmix5'];
   const CATS=[...CATS_MENTAL,...CATS_NEG];
   const CAT_INFO={
     add1:{op:'add',label:'0–99'},   add2:{op:'add',label:'100–499'}, add3:{op:'add',label:'500–999'},
@@ -358,13 +386,17 @@
     pct1:{op:'pct',label:'2 díg'},  pct2:{op:'pct',label:'3 díg'},
     nadd1:{op:'nadd',label:'1 díg'},nadd2:{op:'nadd',label:'2 díg'}, nadd3:{op:'nadd',label:'3 díg'},
     nsub1:{op:'nsub',label:'1 díg'},nsub2:{op:'nsub',label:'2 díg'}, nsub3:{op:'nsub',label:'3 díg'},
-    nchain3:{op:'nchain',label:'3 térm'},nchain4:{op:'nchain',label:'4 térm'},nchain5:{op:'nchain',label:'5 térm'}
+    nmul1:{op:'nmul',label:'1×1'},  nmul2:{op:'nmul',label:'2×1'},
+    ndiv1:{op:'ndiv',label:'1÷1'},  ndiv2:{op:'ndiv',label:'2÷1'},
+    nchain3:{op:'nchain',label:'3 térm'},nchain4:{op:'nchain',label:'4 térm'},nchain5:{op:'nchain',label:'5 térm'},
+    nchainmd3:{op:'nchainmd',label:'3 térm'},nchainmd4:{op:'nchainmd',label:'4 térm'},nchainmd5:{op:'nchainmd',label:'5 térm'},
+    nchainmix3:{op:'nchainmix',label:'3 térm'},nchainmix4:{op:'nchainmix',label:'4 térm'},nchainmix5:{op:'nchainmix',label:'5 térm'}
   };
   const OPS_MENTAL=['add','sub','mul','div','pct'];
-  const OPS_NEG=['nadd','nsub','nchain'];
+  const OPS_NEG=['nadd','nsub','nmul','ndiv','nchain','nchainmd','nchainmix'];
   function catOf(op,val){return op+val;}
 
-  const KEY='practicaMental_v6';
+  const KEY='practicaMental_v8';
   function blankCats(){const o={};CATS.forEach(c=>o[c]=0);return o;}
   function blankData(){return {streak:blankCats(),best:blankCats(),total:blankCats(),days:{}};}
   function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(!d||!d.streak)return blankData();
@@ -434,22 +466,28 @@
   // ================= MODO NEGATIVOS =================
   const selNeg=new Set(['nadd']);
   let countN=10;
-  const cfgNeg=new Set([1]);      // dígitos para suma/resta
-  const cfgChain=new Set([3]);    // términos para cadena
+  const cfgNeg=new Set([1]);
+  const cfgNmul=new Set([1]);
+  const cfgNdiv=new Set([1]);
+  const cfgChain=new Set([3]);
+  const cfgChainMd=new Set([3]);
+  const cfgChainMix=new Set([3]);
+  const NEG_SETS={neg:cfgNeg,nmul:cfgNmul,ndiv:cfgNdiv,chain:cfgChain,chainmd:cfgChainMd,chainmix:cfgChainMix};
   document.querySelectorAll('#setupNeg .seg.multi').forEach(seg=>{
     seg.addEventListener('click',e=>{
       const b=e.target.closest('button');if(!b)return;
-      const which=seg.dataset.cfg,r=parseInt(b.dataset.r,10);
-      const set = which==='chain' ? cfgChain : cfgNeg;
+      const set=NEG_SETS[seg.dataset.cfg];const r=parseInt(b.dataset.r,10);
       if(set.has(r)){if(set.size>1)set.delete(r);}else set.add(r);
       seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',set.has(parseInt(x.dataset.r,10))));
     });
   });
   function renderNegCfgVisibility(){
-    // muestra selector de dígitos si hay suma o resta; selector de términos si hay cadena
-    const hasBasic=selNeg.has('nadd')||selNeg.has('nsub');
-    $('#cfgNeg').classList.toggle('show',hasBasic);
+    $('#cfgNeg').classList.toggle('show',selNeg.has('nadd')||selNeg.has('nsub'));
+    $('#cfgMulNeg').classList.toggle('show',selNeg.has('nmul'));
+    $('#cfgDivNeg').classList.toggle('show',selNeg.has('ndiv'));
     $('#cfgChain').classList.toggle('show',selNeg.has('nchain'));
+    $('#cfgChainMd').classList.toggle('show',selNeg.has('nchainmd'));
+    $('#cfgChainMix').classList.toggle('show',selNeg.has('nchainmix'));
   }
   $('#opsNeg').addEventListener('click',e=>{
     const el=e.target.closest('.op');if(!el)return;
@@ -522,6 +560,74 @@
       text += ` ${ops[i-1]} ${shown}`;
     }
     return {terms,ops,ans,text};
+  }
+  // mult/div de negativos (un solo par)
+  function makeNegMulDiv(op,fmt){
+    let a,b;
+    if(op==='nmul'){ a=fmt===2?rnd(10,99):rnd(2,9); b=rnd(2,9); }
+    else { // división exacta: genero cociente y divisor, multiplico
+      b=rnd(2,9);
+      const q=fmt===2?rnd(10,99):rnd(2,9);
+      a=b*q;
+    }
+    const sa=Math.random()<0.5?-1:1, sb=Math.random()<0.5?-1:1;
+    a*=sa; b*=sb;
+    const ans = op==='nmul' ? a*b : a/b;
+    const oper = op==='nmul'?'×':'÷';
+    const bTxt = b<0?`(${b})`:`${b}`;
+    return {a,b,oper,ans,text:`${a} ${oper} ${bTxt}`};
+  }
+  // cadena solo de × y ÷ (todo mismo nivel, izq a der, división exacta)
+  function makeChainMd(nTerms){
+    for(let attempt=0;attempt<300;attempt++){
+      const terms=[];
+      for(let i=0;i<nTerms;i++){const mag=rnd(2,12);const sign=Math.random()<0.5?-1:1;terms.push(mag*sign);}
+      const ops=[];for(let i=1;i<nTerms;i++)ops.push(pick(['×','÷']));
+      const val=evalMix(terms,ops);
+      if(val===null||!Number.isInteger(val))continue;
+      let text=`${terms[0]}`;
+      for(let i=1;i<nTerms;i++){const t=terms[i];text+=` ${ops[i-1]} ${t<0?'('+t+')':t}`;}
+      return {terms,ops,ans:val,text};
+    }
+    // fallback: producto simple
+    const terms=[rnd(2,9),rnd(2,9)];const ops=['×'];
+    return {terms,ops,ans:terms[0]*terms[1],text:`${terms[0]} × ${terms[1]}`};
+  }
+  // cadena mixta con jerarquía real (× ÷ antes que + −), división exacta
+  // SIEMPRE incluye al menos una × o ÷
+  function makeChainMix(nTerms){
+    for(let attempt=0;attempt<300;attempt++){
+      const terms=[];
+      for(let i=0;i<nTerms;i++){const mag=rnd(2,12);const sign=Math.random()<0.5?-1:1;terms.push(mag*sign);}
+      const ops=[];
+      for(let i=1;i<nTerms;i++){ops.push(pick(['+','−','×','÷']));}
+      if(!ops.includes('×')&&!ops.includes('÷')) continue;   // forzar al menos un ×÷
+      const val=evalMix(terms,ops);
+      if(val===null||!Number.isInteger(val)) continue;
+      let text=`${terms[0]}`;
+      for(let i=1;i<nTerms;i++){const t=terms[i];text+=` ${ops[i-1]} ${t<0?'('+t+')':t}`;}
+      return {terms,ops,ans:val,text};
+    }
+    // fallback con ×÷ garantizado
+    const terms=[rnd(2,9),rnd(2,9),rnd(2,9)].slice(0,nTerms);
+    const ops=['×'];for(let i=2;i<nTerms;i++)ops.push('+');
+    return {terms,ops,ans:evalMix(terms,ops),text:terms.map((t,i)=>i===0?t:` ${ops[i-1]} ${t}`).join('')};
+  }
+  // evalúa respetando jerarquía; devuelve null si alguna división no es exacta
+  function evalMix(terms,ops){
+    // primera pasada: resolver × ÷ (izq a der dentro de ese nivel)
+    let vals=[terms[0]];
+    let addOps=[]; // operadores + / − que quedan
+    for(let i=1;i<terms.length;i++){
+      const op=ops[i-1], t=terms[i];
+      if(op==='×'){ vals[vals.length-1]=vals[vals.length-1]*t; }
+      else if(op==='÷'){ const prev=vals[vals.length-1]; if(t===0||prev%t!==0) return null; vals[vals.length-1]=prev/t; }
+      else { addOps.push(op); vals.push(t); }
+    }
+    // segunda pasada: sumar/restar
+    let acc=vals[0];
+    for(let i=0;i<addOps.length;i++){ acc = addOps[i]==='+' ? acc+vals[i+1] : acc-vals[i+1]; }
+    return acc;
   }
 
   // ---------- explicaciones mentales ----------
@@ -632,6 +738,58 @@
            `Resolvés de izquierda a derecha: ${accSteps.join(' → ')}. `+
            `Resultado: <b>${acc}</b>.`;
   }
+  function explainNegMulDiv(p){
+    const a=p.a,b=p.b,oper=p.oper;
+    const sameSign=(a<0)===(b<0);
+    const signTxt = sameSign ? 'Signos iguales → resultado positivo' : 'Signos diferentes → resultado negativo';
+    const mag = oper==='×' ? Math.abs(a)*Math.abs(b) : Math.abs(a)/Math.abs(b);
+    return `${signTxt}. ${Math.abs(a)} ${oper} ${Math.abs(b)} = ${mag}. → <b>${p.ans}</b>.`;
+  }
+  function explainChainMd(p){
+    const {terms,ops}=p;
+    let acc=terms[0];
+    let steps=[`${terms[0]}`];
+    for(let i=1;i<terms.length;i++){
+      const op=ops[i-1],t=terms[i];
+      acc = op==='×' ? acc*t : acc/t;
+      steps.push(`${op} ${t<0?'('+t+')':t} = ${acc}`);
+    }
+    return `× y ÷ van de izquierda a derecha, multiplicando los signos: ${steps.join(' → ')}. Resultado: <b>${acc}</b>.`;
+  }
+  function explainChainMix(p){
+    const {terms,ops}=p;
+    // reconstruye visual y marca qué se resuelve primero
+    // fase 1: resolver ×÷
+    let vals=[terms[0]], addOps=[], blocks=[[terms[0]]], blockOps=[[]];
+    for(let i=1;i<terms.length;i++){
+      const op=ops[i-1],t=terms[i];
+      if(op==='×'||op==='÷'){ blocks[blocks.length-1].push(t); blockOps[blockOps.length-1].push(op); }
+      else { addOps.push(op); blocks.push([t]); blockOps.push([]); }
+    }
+    // calcular cada bloque
+    const blockVals=blocks.map((blk,bi)=>{
+      let v=blk[0];
+      for(let j=1;j<blk.length;j++){ v = blockOps[bi][j-1]==='×' ? v*blk[j] : v/blk[j]; }
+      return v;
+    });
+    // texto fase 1
+    let f1=[];
+    blocks.forEach((blk,bi)=>{
+      if(blk.length>1){
+        let expr=`${blk[0]}`;
+        for(let j=1;j<blk.length;j++) expr+=` ${blockOps[bi][j-1]} ${blk[j]<0?'('+blk[j]+')':blk[j]}`;
+        f1.push(`${expr} = ${blockVals[bi]}`);
+      }
+    });
+    // fase 2: sumar/restar los bloques
+    let acc=blockVals[0], accSteps=[`${blockVals[0]}`];
+    for(let i=0;i<addOps.length;i++){ const bv=blockVals[i+1]; const shown=bv<0?`(${bv})`:`${bv}`; acc = addOps[i]==='+' ? acc+bv : acc-bv; accSteps.push(`${addOps[i]} ${shown} = ${acc}`); }
+    let s='';
+    if(f1.length>0) s+=`Primero × y ÷ (van antes que + y −): ${f1.join('; ')}. `;
+    else s+='No hay × ni ÷ que resolver primero. ';
+    s+=`Luego + y − de izquierda a derecha: ${accSteps.join(' → ')}. Resultado: <b>${acc}</b>.`;
+    return s;
+  }
 
   function explainFor(p){
     if(p.op==='add')return explainAdd(p.a,p.b);
@@ -639,7 +797,10 @@
     if(p.op==='mul')return explainMul(p.a,p.b);
     if(p.op==='pct')return explainPct(p.a,p.b);
     if(p.op==='nadd'||p.op==='nsub')return explainNeg(p);
+    if(p.op==='nmul'||p.op==='ndiv')return explainNegMulDiv(p);
     if(p.op==='nchain')return explainChain(p);
+    if(p.op==='nchainmd')return explainChainMd(p);
+    if(p.op==='nchainmix')return explainChainMix(p);
     if(p.b>=10)return explainDivEstimate(p.a,p.b);
     return explainDivDigit(p.a,p.b);
   }
@@ -662,6 +823,21 @@
       const n=pick([...cfgChain]);
       const d=makeChain(n);
       return {op,cat:catOf('nchain',n),terms:d.terms,ops:d.ops,ans:d.ans,text:d.text};
+    }
+    if(op==='nchainmd'){
+      const n=pick([...cfgChainMd]);
+      const d=makeChainMd(n);
+      return {op,cat:catOf('nchainmd',n),terms:d.terms,ops:d.ops,ans:d.ans,text:d.text};
+    }
+    if(op==='nchainmix'){
+      const n=pick([...cfgChainMix]);
+      const d=makeChainMix(n);
+      return {op,cat:catOf('nchainmix',n),terms:d.terms,ops:d.ops,ans:d.ans,text:d.text};
+    }
+    if(op==='nmul'||op==='ndiv'){
+      const fmt=pick([...(op==='nmul'?cfgNmul:cfgNdiv)]);
+      const d=makeNegMulDiv(op,fmt);
+      return {op,cat:catOf(op,fmt),a:d.a,b:d.b,oper:d.oper,ans:d.ans,text:d.text};
     }
     const dig=pick([...cfgNeg]);
     const d=makeNeg(op,dig);
@@ -780,7 +956,10 @@
     add:['add1','add2','add3'],sub:['sub1','sub2','sub3'],mul:['mul1','mul2'],
     div:['div1','div2','div3'],pct:['pct1','pct2'],
     nadd:['nadd1','nadd2','nadd3'],nsub:['nsub1','nsub2','nsub3'],
-    nchain:['nchain3','nchain4','nchain5']
+    nmul:['nmul1','nmul2'],ndiv:['ndiv1','ndiv2'],
+    nchain:['nchain3','nchain4','nchain5'],
+    nchainmd:['nchainmd3','nchainmd4','nchainmd5'],
+    nchainmix:['nchainmix3','nchainmix4','nchainmix5']
   };
   const ALL_DASH_OPS=[...OPS_MENTAL,...OPS_NEG];
   function statBlock(op,field){
@@ -818,13 +997,14 @@
     {t:'Resta de 2 dígitos (counting up)',b:'Del número chico subís al múltiplo de 10 más cercano, luego de ahí al grande, y sumás los saltos. <span class="ex">63 − 28 → de 28 a 30 = 2, de 30 a 63 = 33, total 2 + 33 = 35</span>. La lógica es "cuánto me falta pa\' completar", como el vuelto.'},
     {t:'Multiplicación 2×1 (descomposición)',b:'Partís el número de dos dígitos en decena y unidad, multiplicás cada parte y sumás. Siempre arrancás por la decena. <span class="ex">7 × 34 → 7×30 = 210, 7×4 = 28 → 238</span>. <span class="ex">8 × 46 → 320 + 48 = 368</span>'},
     {t:'División 2÷1 (izquierda a derecha)',b:'Dividís dígito por dígito de izquierda a derecha. Lo que sobra se pega al siguiente dígito. <span class="ex">75 ÷ 5 → 7÷5 = 1 sobra 2, pego el 2 al 5 = 25, 25÷5 = 5 → 15</span>'},
-    {t:'Porcentajes (base 10%)',b:'El 10% es correr la coma un lugar. El 1% dos lugares. Con eso armás todo: 20% = 10%×2, 5% = mitad del 10%, 15% = 10% + 5%, 25% = ÷4, 50% = mitad. <span class="ex">35% de 80 → 10% = 8, 30% = 24, 5% = 4 → 28</span>'}
+    {t:'Porcentajes (base 10%)',b:'El 10% es correr la coma un lugar. El 1% dos lugares. Con eso armás todo: 20% = 10%×2, 5% = mitad del 10%, 15% = 10% + 5%, 25% = ÷4, 50% = mitad. <span class="ex">35% de 80 → 10% = 8, 30% = 24, 5% = 4 → 28</span>'},
+    {t:'Jerarquía de operaciones',b:'Se resuelve en este orden:<br>1. Paréntesis ( )<br>2. Potencias y raíces (3², √)<br>3. Multiplicación y división (× ÷)<br>4. Sumas y restas (+ −)<br><span class="ex">3 + 4 × 2 = 3 + 8 = 11</span> (no 14)'}
   ];
   const FORMULAS_NEG=[
-    {t:'Regla 1 — signos iguales',b:'Si los dos números tienen el mismo signo, se suman las cantidades y se mantiene el signo. <span class="ex">−5 − 3 = −8</span>'},
-    {t:'Regla 2 — signos diferentes',b:'Si tienen signos diferentes, se restan y gana el signo del número más grande. <span class="ex">−5 + 8 = 3</span> · <span class="ex">5 + (−8) = −3</span>'},
-    {t:'Regla 3 — paréntesis',b:'Si hay paréntesis, primero se destruyen usando la ley de los signos, y después aplicás las reglas 1 y 2.'},
-    {t:'Ley de los signos',b:'Signos iguales dan positivo, signos diferentes dan negativo. <span class="ex">−(−3) = +3</span> · <span class="ex">+(−3) = −3</span>. Por eso restar un negativo es sumar.'}
+    {t:'Ley universal de los signos',b:'Signos iguales → <b>+</b> · signos distintos → <b>−</b>. <span class="ex">−(−3) = +3</span> · <span class="ex">+(−3) = −3</span>'},
+    {t:'Suma y resta',b:'Signos iguales se suman, signos distintos se restan. El resultado se queda con el signo del número más grande. <span class="ex">−5 − 3 = −8</span> · <span class="ex">−5 + 8 = 3</span> · <span class="ex">5 + (−8) = −3</span>'},
+    {t:'Multiplicación y división',b:'Hacés la operación normal y multiplicás los signos (ley universal). <span class="ex">−4 × −3 = 12</span> · <span class="ex">−12 ÷ 3 = −4</span> · <span class="ex">6 × −5 = −30</span>'},
+    {t:'Jerarquía de operaciones',b:'Se resuelve en este orden:<br>1. Paréntesis ( )<br>2. Potencias y raíces (3², √)<br>3. Multiplicación y división (× ÷)<br>4. Sumas y restas (+ −)<br><span class="ex">−3 + 4 × (−2) = −3 + (−8) = −11</span>'}
   ];
   function renderFormulas(){
     $('#fMental').innerHTML=FORMULAS_MENTAL.map(f=>`<div class="formula"><div class="ft">${f.t}</div><div class="fb">${f.b}</div></div>`).join('');
