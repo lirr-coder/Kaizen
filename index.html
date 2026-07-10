@@ -245,7 +245,7 @@
       <div class="field cfg" id="cfgMul">
         <label>Formato de multiplicación</label>
         <div class="seg multi" data-cfg="mul">
-          <button data-r="1" class="on">1 × 1 díg</button><button data-r="2">2 × 1 díg</button>
+          <button data-r="1" class="on">1 × 1 díg</button><button data-r="2">2 × 1 díg</button><button data-r="3">2 × 2 díg</button>
         </div>
       </div>
       <div class="field cfg" id="cfgDiv">
@@ -422,7 +422,7 @@
   <section id="setupLang" class="hidden">
     <button class="back" id="backRootFromLang">← Materias</button>
     <div class="card" style="margin-bottom:16px">
-      <h2>Elegí un juego</h2>
+      <h2>Elegí uno o varios juegos</h2>
       <div class="ops" id="opsLang">
         <div class="op on" data-game="mixbasic"><span class="sym">🔤</span><span class="lbl">Mixto</span></div>
         <div class="op" data-game="art"><span class="sym">🔖</span><span class="lbl">Artículos</span></div>
@@ -496,14 +496,14 @@
   const SYM={add:'+',sub:'−',mul:'×',div:'÷',pct:'%',nadd:'+',nsub:'−',nmul:'×',ndiv:'÷',nchain:'( )',nchainmd:'×÷',nchainmix:'±×'};
   const NAME={add:'Suma',sub:'Resta',mul:'Mult',div:'División',pct:'Porcentaje',nadd:'Suma −',nsub:'Resta −',nmul:'Mult −',ndiv:'Div −',nchain:'Cadena +−',nchainmd:'Cadena ×÷',nchainmix:'Cadena mixta'};
   // categorías mentales
-  const CATS_MENTAL=['add1','add2','add3','sub1','sub2','sub3','mul1','mul2','div1','div2','div3','pct1','pct2'];
+  const CATS_MENTAL=['add1','add2','add3','sub1','sub2','sub3','mul1','mul2','mul3','div1','div2','div3','pct1','pct2'];
   // categorías negativos
   const CATS_NEG=['nadd1','nadd2','nadd3','nsub1','nsub2','nsub3','nmul1','nmul2','ndiv1','ndiv2','nchain3','nchain4','nchain5','nchainmd3','nchainmd4','nchainmd5','nchainmix3','nchainmix4','nchainmix5'];
   // (CATS se define más abajo, tras las categorías de lengua)
   const CAT_INFO={
     add1:{op:'add',label:'0–99'},   add2:{op:'add',label:'100–499'}, add3:{op:'add',label:'500–999'},
     sub1:{op:'sub',label:'0–99'},   sub2:{op:'sub',label:'100–499'}, sub3:{op:'sub',label:'500–999'},
-    mul1:{op:'mul',label:'1×1'},    mul2:{op:'mul',label:'2×1'},
+    mul1:{op:'mul',label:'1×1'},    mul2:{op:'mul',label:'2×1'}, mul3:{op:'mul',label:'2×2'},
     div1:{op:'div',label:'2÷1'},    div2:{op:'div',label:'3÷1'},     div3:{op:'div',label:'3÷2'},
     pct1:{op:'pct',label:'2 díg'},  pct2:{op:'pct',label:'3 díg'},
     nadd1:{op:'nadd',label:'1 díg'},nadd2:{op:'nadd',label:'2 díg'}, nadd3:{op:'nadd',label:'3 díg'},
@@ -538,7 +538,7 @@
   const CATS=[...CATS_MENTAL,...CATS_NEG,...CATS_LANG];
   function catOf(op,val){return op+val;}
 
-  const KEY='practicaMental_v10';
+  const KEY='practicaMental_v11';
   function blankCats(){const o={};CATS.forEach(c=>o[c]=0);return o;}
   function blankData(){return {streak:blankCats(),best:blankCats(),total:blankCats(),days:{}};}
   function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(!d||!d.streak)return blankData();
@@ -954,7 +954,7 @@
     let a,b,ans,cat,text;
     if(op==='add'){const band=pick([...cfg.add]);const[lo,hi]=BAND[band];a=rnd(lo,hi);b=rnd(lo,hi);ans=a+b;cat=catOf('add',band);text=`${a} + ${b}`;}
     else if(op==='sub'){const band=pick([...cfg.sub]);const[lo,hi]=BAND[band];a=rnd(lo,hi);b=rnd(lo,hi);if(b>a)[a,b]=[b,a];ans=a-b;cat=catOf('sub',band);text=`${a} − ${b}`;}
-    else if(op==='mul'){const fmt=pick([...cfg.mul]);a=fmt===2?rnd(10,99):rnd(2,9);b=rnd(2,9);ans=a*b;cat=catOf('mul',fmt);text=`${a} × ${b}`;}
+    else if(op==='mul'){const fmt=pick([...cfg.mul]);if(fmt===3){a=rnd(10,99);b=rnd(10,99);}else if(fmt===2){a=rnd(10,99);b=rnd(2,9);}else{a=rnd(2,9);b=rnd(2,9);}ans=a*b;cat=catOf('mul',fmt);text=`${a} × ${b}`;}
     else if(op==='div'){const fmt=pick([...cfg.div]);const d=makeDivision(fmt);a=d.a;b=d.b;ans=d.ans;cat=catOf('div',fmt);text=`${a} ÷ ${b}`;}
     else{const fmt=pick([...cfg.pct]);const d=makePct(fmt);a=d.p;b=d.base;ans=d.ans;cat=catOf('pct',fmt);text=`${d.p}% de ${d.base}`;}
     return {op,cat,a,b,ans,text};
@@ -1192,20 +1192,31 @@
   };
 
   // ================= LENGUA: setup =================
-  let langGame='mixbasic';
+  const selGames=new Set(['mixbasic']);   // juegos elegidos (multi para tipos; mixbasic exclusivo)
   let countL=10;
   const GAME_DESC={
     mixbasic:'Clasificá cada palabra por su tipo: sustantivo, adjetivo, artículo, verbo u otra.',
-    art:'Una frase con un artículo marcado. Decí si es definido o indefinido y su concordancia (género y número).',
-    sust:'Un sustantivo marcado. Decí si es común o propio, y concreto o abstracto.',
+    art:'Una frase con un artículo. Elegís cuál es, y decís si es definido/indefinido y su concordancia.',
+    sust:'Un sustantivo. Elegís cuál es, y decís si es común/propio y concreto/abstracto.',
     adj:'Palabra marcada: ¿es adjetivo o verbo? Usá la prueba del tiempo.',
-    verb:'Un verbo marcado. Decí si es acción o estado, e infinitivo o conjugado.'
+    verb:'Un verbo. Elegís cuál es, y decís si es acción/estado e infinitivo/conjugado.'
   };
-  function renderGameDesc(){ $('#gameDesc').textContent=GAME_DESC[langGame]||''; }
+  function renderGameDesc(){
+    if(selGames.has('mixbasic')){ $('#gameDesc').textContent=GAME_DESC.mixbasic; return; }
+    const names={art:'Artículos',sust:'Sustantivos',adj:'Adjetivos',verb:'Verbos'};
+    const sel=[...selGames].map(g=>names[g]);
+    $('#gameDesc').textContent = sel.length===1 ? GAME_DESC[[...selGames][0]] : `Mezcla: ${sel.join(', ')}. Cada ejercicio es de uno de estos tipos.`;
+  }
   $('#opsLang').addEventListener('click',e=>{
     const el=e.target.closest('.op');if(!el)return;
-    langGame=el.dataset.game;
-    document.querySelectorAll('#opsLang .op').forEach(x=>x.classList.toggle('on',x.dataset.game===langGame));
+    const g=el.dataset.game;
+    if(g==='mixbasic'){ selGames.clear(); selGames.add('mixbasic'); }
+    else{
+      selGames.delete('mixbasic');
+      if(selGames.has(g)){ if(selGames.size>1) selGames.delete(g); }
+      else selGames.add(g);
+    }
+    document.querySelectorAll('#opsLang .op').forEach(x=>x.classList.toggle('on',selGames.has(x.dataset.game)));
     renderGameDesc();
   });
   const countLInput=$('#countL');
@@ -1220,21 +1231,30 @@
   const shuffle=a=>[...a].sort(()=>Math.random()-0.5);
   let lItems=[],lIdx=0,lLog=[],lStart=0,lQStart=0,lTick=null;
   let lCorrect=0,lTotal=0,lEvaluated=false;
-  // estado de selección para juegos de picks (art/sust/verb/adj)
-  let pickState={};   // rowKey -> value elegido
-  // estado del mixto básico (drag palabras a cajas)
+  let langGame='mixbasic';   // juego del ítem actual (se setea por ítem)
+  let pickState={};
   let placement={},selectedWord=null;
+
+  const BANK_OF={art:()=>ART_BANK,sust:()=>SUST_BANK,verb:()=>VERB_BANK,adj:()=>ADJV_BANK};
 
   function startLang(){
     lIdx=0;lLog=[];lCorrect=0;lTotal=0;
-    // arma items según el juego
-    if(langGame==='mixbasic'){
-      lItems=shuffle(PHRASES).slice(0,countL);
-      while(lItems.length<countL && PHRASES.length) lItems.push(shuffle(PHRASES)[0]);
+    if(selGames.has('mixbasic')){
+      // mixto: ítems son frases del banco PHRASES, cada uno marcado como mixbasic
+      const sh=shuffle(PHRASES);
+      lItems=[];for(let i=0;i<countL;i++) lItems.push({_game:'mixbasic',phrase:sh[i%sh.length]});
     }else{
-      const bank = langGame==='art'?ART_BANK : langGame==='sust'?SUST_BANK : langGame==='verb'?VERB_BANK : ADJV_BANK;
-      lItems=[];const sh=shuffle(bank);
-      for(let i=0;i<countL;i++) lItems.push(sh[i%sh.length]);
+      // mezcla de tipos: cada ítem elige un tipo al azar de los seleccionados
+      const games=[...selGames];
+      lItems=[];
+      const pools={};games.forEach(g=>pools[g]=shuffle(BANK_OF[g]()));
+      const idxs={};games.forEach(g=>idxs[g]=0);
+      for(let i=0;i<countL;i++){
+        const g=games[i%games.length]; // reparte parejo, y el shuffle da variedad
+        const pool=pools[g];const it=pool[idxs[g]%pool.length];idxs[g]++;
+        lItems.push({_game:g,it});
+      }
+      lItems=shuffle(lItems);
     }
     only('playLang');
     lStart=performance.now();
@@ -1244,6 +1264,8 @@
   }
 
   function showLangItem(){
+    const item=lItems[lIdx];
+    langGame=item._game;
     $('#progL').textContent=`${lIdx+1} / ${lItems.length}`;
     $('#barFillL').style.width=(lIdx/lItems.length*100)+'%';
     $('#explainL').classList.add('hidden');
@@ -1257,7 +1279,7 @@
   // ---------- MIXTO BÁSICO (drag palabras → cajas de tipo) ----------
   function showMixBasic(){
     $('#phraseHint').textContent='Tocá una palabra y luego su caja. O arrastrala.';
-    const phrase=lItems[lIdx];
+    const phrase=lItems[lIdx].phrase;
     placement={};selectedWord=null;
     const wc=$('#words');wc.innerHTML='';
     phrase.forEach((w,i)=>{
@@ -1277,7 +1299,7 @@
   // ---------- JUEGOS DE PICKS (filas de opciones) ----------
   // define las filas según el juego, para el item actual
   function rowsForItem(){
-    const it=lItems[lIdx];
+    const it=lItems[lIdx].it;
     if(langGame==='art'){
       return [
         {key:'def',label:'Tipo',cat:'L_art_def',opts:[['def','Definido'],['indef','Indefinido']],correct:it.def},
@@ -1307,7 +1329,7 @@
   const GAME_WORDNAME={art:'el artículo',sust:'el sustantivo',adj:null,verb:'el verbo'};
   let wordChosen=false;  // si ya se eligió correctamente la palabra
   function showPicks(){
-    const it=lItems[lIdx];
+    const it=lItems[lIdx].it;
     pickState={};wordChosen=false;
     const wc=$('#words');wc.innerHTML='';
     it.w.forEach((word,i)=>{
@@ -1327,7 +1349,7 @@
     }
   }
   function markTargetWord(){
-    const it=lItems[lIdx];
+    const it=lItems[lIdx].it;
     document.querySelectorAll('#words .word').forEach(w=>w.classList.toggle('target',parseInt(w.dataset.i,10)===it.i));
   }
   function renderPickRows(){
@@ -1374,7 +1396,7 @@
     if(langGame==='adj')return;          // adj no elige palabra
     if(wordChosen)return;                 // ya se eligió, no cambiar
     const idx=parseInt(w.dataset.i,10);
-    const it=lItems[lIdx];
+    const it=lItems[lIdx].it;
     if(idx===it.i){
       // acierto: marca y muestra subtipos
       wordChosen=true;
@@ -1402,7 +1424,7 @@
   }
   function renderPlacements(){
     document.querySelectorAll('#boxes .drop').forEach(d=>d.innerHTML='');
-    const phrase=lItems[lIdx];
+    const phrase=lItems[lIdx].phrase;
     Object.keys(placement).forEach(wi=>{
       const t=placement[wi];const box=document.querySelector(`.box[data-type="${t}"] .drop`);
       if(box){const chip=document.createElement('div');chip.className='chip';chip.textContent=phrase[wi][0];chip.dataset.wi=wi;box.appendChild(chip);}
@@ -1426,7 +1448,7 @@
     return 'otra';
   }
   function checkMixBasic(){
-    const phrase=lItems[lIdx];
+    const phrase=lItems[lIdx].phrase;
     if(Object.keys(placement).length<phrase.length){
       $('#exHeadL').textContent='Faltan palabras';
       $('#exBodyL').innerHTML='Poné todas las palabras en una caja (usá <b>Otra</b> si no es de los 4 tipos).';
@@ -1481,13 +1503,13 @@
     });
     lTotal+=rows.length;lCorrect+=correctCount;
     const allOk=correctCount===rows.length;
-    const it=lItems[lIdx];
+    const it=lItems[lIdx].it;
     lLog.push({label:it.w?it.w[it.i]:'',correct:correctCount,total:rows.length,allOk,took});
     finishItem(allOk,errs);
   }
 
   function explainPick(r){
-    const it=lItems[lIdx];
+    const it=lItems[lIdx].it;
     const word=it.w[it.i];
     const val=v=>({def:'definido',indef:'indefinido',m:'masculino',f:'femenino',s:'singular',p:'plural',comun:'común',propio:'propio',concreto:'concreto',abstracto:'abstracto',accion:'acción',estado:'estado',inf:'infinitivo',conj:'conjugado',adj:'adjetivo',verb:'verbo'}[v]||v);
     const reasons={
@@ -1653,7 +1675,7 @@
 
   // ================= DASHBOARD =================
   const CATS_BY_OP={
-    add:['add1','add2','add3'],sub:['sub1','sub2','sub3'],mul:['mul1','mul2'],
+    add:['add1','add2','add3'],sub:['sub1','sub2','sub3'],mul:['mul1','mul2','mul3'],
     div:['div1','div2','div3'],pct:['pct1','pct2'],
     nadd:['nadd1','nadd2','nadd3'],nsub:['nsub1','nsub2','nsub3'],
     nmul:['nmul1','nmul2'],ndiv:['ndiv1','ndiv2'],
