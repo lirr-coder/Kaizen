@@ -155,6 +155,19 @@
   .fcard-lang h2{color:#8b5cc4}
   .fcard-lang .formula .ft{color:#8b5cc4}
   .dash-sep{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#8b5cc4;font-weight:700;margin:6px 0 2px;padding-top:6px;border-top:1px solid var(--line)}
+  .game-desc{font-size:13px;color:var(--ink-dim);line-height:1.5;margin-top:14px;padding:12px;background:var(--panel-2);border-radius:10px}
+  .word.target{border-color:#8b5cc4;background:#faf7ff;color:#8b5cc4;font-weight:700}
+  .row-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-dim);font-weight:700;margin:14px 0 6px}
+  .row-boxes{display:grid;gap:8px}
+  .row-boxes.c2{grid-template-columns:repeat(2,1fr)}
+  .row-boxes.c3{grid-template-columns:repeat(3,1fr)}
+  .row-boxes.c4{grid-template-columns:repeat(2,1fr)}
+  .pick{background:var(--panel);border:1.5px solid var(--line);border-radius:11px;padding:14px 8px;text-align:center;cursor:pointer;font-size:14px;font-weight:600;color:var(--ink);transition:.12s;user-select:none}
+  .pick:active{transform:scale(.97)}
+  .pick.sel{border-color:var(--accent);background:#eef0fc;color:var(--accent)}
+  .pick.ok{border-color:var(--right);background:#eefaf5;color:var(--right)}
+  .pick.err{border-color:var(--wrong);background:#fdf1f2;color:var(--wrong)}
+  .pick.should{border-color:var(--right);border-style:dashed}
   .hidden{display:none}
 </style>
 </head>
@@ -409,13 +422,15 @@
   <section id="setupLang" class="hidden">
     <button class="back" id="backRootFromLang">← Materias</button>
     <div class="card" style="margin-bottom:16px">
-      <h2>Clases de palabras</h2>
+      <h2>Elegí un juego</h2>
       <div class="ops" id="opsLang">
-        <div class="op on" data-op="sust"><span class="sym">📦</span><span class="lbl">Sustantivo</span></div>
-        <div class="op on" data-op="adj"><span class="sym">🎨</span><span class="lbl">Adjetivo</span></div>
-        <div class="op on" data-op="art"><span class="sym">🔖</span><span class="lbl">Artículo</span></div>
-        <div class="op on" data-op="verb"><span class="sym">⚡</span><span class="lbl">Verbo</span></div>
+        <div class="op on" data-game="mixbasic"><span class="sym">🔤</span><span class="lbl">Mixto</span></div>
+        <div class="op" data-game="art"><span class="sym">🔖</span><span class="lbl">Artículos</span></div>
+        <div class="op" data-game="sust"><span class="sym">📦</span><span class="lbl">Sustantivos</span></div>
+        <div class="op" data-game="adj"><span class="sym">🎨</span><span class="lbl">Adjetivos</span></div>
+        <div class="op" data-game="verb"><span class="sym">⚡</span><span class="lbl">Verbos</span></div>
       </div>
+      <div class="game-desc" id="gameDesc"></div>
       <div class="field">
         <label>¿Cuántas frases?</label>
         <div class="stepper">
@@ -440,12 +455,12 @@
     </div>
     <div class="bar"><div id="barFillL"></div></div>
     <div class="card">
-      <div class="phrase-hint">Tocá una palabra y luego su caja. O arrastrala.</div>
+      <div class="phrase-hint" id="phraseHint">Tocá una palabra y luego su caja. O arrastrala.</div>
       <div class="words" id="words"></div>
     </div>
-    <div class="boxes" id="boxes"></div>
+    <div id="rows"></div>
     <div class="explain hidden" id="explainL">
-      <div class="ex-head">Corrección</div>
+      <div class="ex-head" id="exHeadL">Corrección</div>
       <div class="ex-body" id="exBodyL"></div>
       <button class="ex-cont" id="exContL">Continuar →</button>
     </div>
@@ -502,15 +517,28 @@
   const OPS_MENTAL=['add','sub','mul','div','pct'];
   const OPS_NEG=['nadd','nsub','nmul','ndiv','nchain','nchainmd','nchainmix'];
   // ---- lengua: clases de palabras ----
-  const LANG_TYPES=['sust','adj','art','verb'];         // los 4 que se practican
+  const LANG_TYPES=['sust','adj','art','verb'];
   const LANG_NAME={sust:'Sustantivo',adj:'Adjetivo',art:'Artículo',verb:'Verbo',otra:'Otra'};
-  const CATS_LANG=['L_sust','L_adj','L_art','L_verb'];   // categorías de progreso (por tipo)
-  const CAT_LANG_INFO={L_sust:{label:'Sustantivo'},L_adj:{label:'Adjetivo'},L_art:{label:'Artículo'},L_verb:{label:'Verbo'}};
+  // categorías de progreso: tipo básico + subcapas
+  const CATS_LANG=[
+    'L_sust','L_adj','L_art','L_verb',          // reconocer tipo (mixto básico)
+    'L_art_def','L_art_conc',                    // artículo: definido/indef, concordancia
+    'L_sust_cp','L_sust_ca',                      // sustantivo: común/propio, concreto/abstracto
+    'L_verb_ae','L_verb_ic',                      // verbo: acción/estado, infinitivo/conjugado
+    'L_adj_vs'                                    // adjetivo vs verbo
+  ];
+  const CAT_LANG_INFO={
+    L_sust:{label:'Sustantivo'},L_adj:{label:'Adjetivo'},L_art:{label:'Artículo'},L_verb:{label:'Verbo'},
+    L_art_def:{label:'Art: def/indef'},L_art_conc:{label:'Art: concord.'},
+    L_sust_cp:{label:'Sust: común/propio'},L_sust_ca:{label:'Sust: concr/abstr'},
+    L_verb_ae:{label:'Verbo: acc/estado'},L_verb_ic:{label:'Verbo: inf/conj'},
+    L_adj_vs:{label:'Adj vs Verbo'}
+  };
   const typeToCat={sust:'L_sust',adj:'L_adj',art:'L_art',verb:'L_verb'};
   const CATS=[...CATS_MENTAL,...CATS_NEG,...CATS_LANG];
   function catOf(op,val){return op+val;}
 
-  const KEY='practicaMental_v9';
+  const KEY='practicaMental_v10';
   function blankCats(){const o={};CATS.forEach(c=>o[c]=0);return o;}
   function blankData(){return {streak:blankCats(),best:blankCats(),total:blankCats(),days:{}};}
   function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(!d||!d.streak)return blankData();
@@ -1062,15 +1090,123 @@
     [['La','art'],['fruta','sust'],['madura','adj'],['cae','verb']]
   ];
 
+  // ===== Bancos con subtipos =====
+  // Artículos: frase, índice del artículo marcado, {def:'def'|'indef', gen:'m'|'f', num:'s'|'p'}
+  const ART_BANK=[
+    {w:['El','perro','corre'],i:0,def:'def',gen:'m',num:'s'},
+    {w:['La','casa','es','grande'],i:0,def:'def',gen:'f',num:'s'},
+    {w:['Los','niños','juegan'],i:0,def:'def',gen:'m',num:'p'},
+    {w:['Las','flores','crecen'],i:0,def:'def',gen:'f',num:'p'},
+    {w:['Un','gato','duerme'],i:0,def:'indef',gen:'m',num:'s'},
+    {w:['Una','mujer','canta'],i:0,def:'indef',gen:'f',num:'s'},
+    {w:['Unos','libros','caen'],i:0,def:'indef',gen:'m',num:'p'},
+    {w:['Unas','sillas','viejas'],i:0,def:'indef',gen:'f',num:'p'},
+    {w:['El','sol','brilla'],i:0,def:'def',gen:'m',num:'s'},
+    {w:['La','luna','sale'],i:0,def:'def',gen:'f',num:'s'},
+    {w:['Los','carros','pasan'],i:0,def:'def',gen:'m',num:'p'},
+    {w:['Las','nubes','vuelan'],i:0,def:'def',gen:'f',num:'p'},
+    {w:['Un','árbol','crece'],i:0,def:'indef',gen:'m',num:'s'},
+    {w:['Una','flor','huele'],i:0,def:'indef',gen:'f',num:'s'},
+    {w:['Unos','perros','ladran'],i:0,def:'indef',gen:'m',num:'p'},
+    {w:['Unas','aves','migran'],i:0,def:'indef',gen:'f',num:'p'},
+    {w:['El','río','baja'],i:0,def:'def',gen:'m',num:'s'},
+    {w:['La','montaña','es','alta'],i:0,def:'def',gen:'f',num:'s'},
+    {w:['Los','peces','nadan'],i:0,def:'def',gen:'m',num:'p'},
+    {w:['Las','estrellas','brillan'],i:0,def:'def',gen:'f',num:'p'}
+  ];
+  // Sustantivos: {cp:'comun'|'propio', ca:'concreto'|'abstracto'}
+  const SUST_BANK=[
+    {w:['El','perro','es','fiel'],i:1,cp:'comun',ca:'concreto'},
+    {w:['Firulais','corre','rápido'],i:0,cp:'propio',ca:'concreto'},
+    {w:['Venezuela','es','hermosa'],i:0,cp:'propio',ca:'concreto'},
+    {w:['El','amor','es','fuerte'],i:1,cp:'comun',ca:'abstracto'},
+    {w:['La','montaña','es','enorme'],i:1,cp:'comun',ca:'concreto'},
+    {w:['Caracas','es','grande'],i:0,cp:'propio',ca:'concreto'},
+    {w:['El','miedo','paraliza'],i:1,cp:'comun',ca:'abstracto'},
+    {w:['La','silla','está','rota'],i:1,cp:'comun',ca:'concreto'},
+    {w:['La','libertad','importa'],i:1,cp:'comun',ca:'abstracto'},
+    {w:['Luis','estudia','mucho'],i:0,cp:'propio',ca:'concreto'},
+    {w:['El','agua','está','fría'],i:1,cp:'comun',ca:'concreto'},
+    {w:['El','hambre','crece'],i:1,cp:'comun',ca:'abstracto'},
+    {w:['El','Orinoco','es','largo'],i:1,cp:'propio',ca:'concreto'},
+    {w:['La','mesa','es','nueva'],i:1,cp:'comun',ca:'concreto'},
+    {w:['La','alegría','contagia'],i:1,cp:'comun',ca:'abstracto'},
+    {w:['María','canta','bonito'],i:0,cp:'propio',ca:'concreto'},
+    {w:['El','país','crece'],i:1,cp:'comun',ca:'concreto'},
+    {w:['La','tristeza','pasa'],i:1,cp:'comun',ca:'abstracto'},
+    {w:['El','gato','duerme'],i:1,cp:'comun',ca:'concreto'},
+    {w:['La','paz','llega'],i:1,cp:'comun',ca:'abstracto'}
+  ];
+  // Verbos: {ae:'accion'|'estado', ic:'inf'|'conj'}
+  const VERB_BANK=[
+    {w:['El','perro','corre'],i:2,ae:'accion',ic:'conj'},
+    {w:['Quiero','saltar','alto'],i:1,ae:'accion',ic:'inf'},
+    {w:['La','casa','es','grande'],i:2,ae:'estado',ic:'conj'},
+    {w:['Voy','a','comer'],i:2,ae:'accion',ic:'inf'},
+    {w:['Ella','está','feliz'],i:1,ae:'estado',ic:'conj'},
+    {w:['Me','gusta','correr'],i:2,ae:'accion',ic:'inf'},
+    {w:['Los','niños','juegan'],i:2,ae:'accion',ic:'conj'},
+    {w:['El','cielo','es','azul'],i:2,ae:'estado',ic:'conj'},
+    {w:['Debo','estudiar','hoy'],i:1,ae:'accion',ic:'inf'},
+    {w:['María','canta','bien'],i:1,ae:'accion',ic:'conj'},
+    {w:['El','café','está','frío'],i:2,ae:'estado',ic:'conj'},
+    {w:['Quiero','dormir','ya'],i:1,ae:'accion',ic:'inf'},
+    {w:['El','tren','llega','tarde'],i:2,ae:'accion',ic:'conj'},
+    {w:['Ana','parece','cansada'],i:1,ae:'estado',ic:'conj'},
+    {w:['Vamos','a','leer'],i:2,ae:'accion',ic:'inf'},
+    {w:['El','sol','brilla'],i:2,ae:'accion',ic:'conj'},
+    {w:['La','sopa','está','caliente'],i:2,ae:'estado',ic:'conj'},
+    {w:['Necesito','descansar','pronto'],i:1,ae:'accion',ic:'inf'},
+    {w:['Los','pájaros','vuelan'],i:2,ae:'accion',ic:'conj'},
+    {w:['El','niño','es','tímido'],i:2,ae:'estado',ic:'conj'}
+  ];
+  // Adjetivo vs Verbo: frase, índice marcado, answer:'adj'|'verb'
+  const ADJV_BANK=[
+    {w:['La','montaña','es','enorme'],i:3,answer:'adj'},
+    {w:['La','montaña','es','enorme'],i:2,answer:'verb'},
+    {w:['El','perro','negro','ladra'],i:2,answer:'adj'},
+    {w:['El','perro','negro','ladra'],i:3,answer:'verb'},
+    {w:['El','carro','rojo','corre'],i:2,answer:'adj'},
+    {w:['El','carro','rojo','corre'],i:3,answer:'verb'},
+    {w:['La','casa','está','limpia'],i:2,answer:'verb'},
+    {w:['La','casa','está','limpia'],i:3,answer:'adj'},
+    {w:['El','café','está','frío'],i:2,answer:'verb'},
+    {w:['El','café','está','frío'],i:3,answer:'adj'},
+    {w:['La','flor','es','bonita'],i:2,answer:'verb'},
+    {w:['La','flor','es','bonita'],i:3,answer:'adj'},
+    {w:['El','niño','alto','salta'],i:2,answer:'adj'},
+    {w:['El','niño','alto','salta'],i:3,answer:'verb'},
+    {w:['El','agua','fría','refresca'],i:2,answer:'adj'},
+    {w:['El','agua','fría','refresca'],i:3,answer:'verb'},
+    {w:['La','sopa','está','salada'],i:2,answer:'verb'},
+    {w:['La','sopa','está','salada'],i:3,answer:'adj'},
+    {w:['El','cielo','es','azul'],i:2,answer:'verb'},
+    {w:['El','cielo','es','azul'],i:3,answer:'adj'}
+  ];
+  // Mixto completo: usa PHRASES pero pide tipo + subtipo de cada palabra clasificable.
+  // Para eso necesito subtipos en PHRASES; los infiero con un mapa de palabras conocidas.
+  const SUB_MAP={
+    // artículos
+    'el':{def:'def',gen:'m',num:'s'},'la':{def:'def',gen:'f',num:'s'},'los':{def:'def',gen:'m',num:'p'},'las':{def:'def',gen:'f',num:'p'},
+    'un':{def:'indef',gen:'m',num:'s'},'una':{def:'indef',gen:'f',num:'s'},'unos':{def:'indef',gen:'m',num:'p'},'unas':{def:'indef',gen:'f',num:'p'}
+  };
+
   // ================= LENGUA: setup =================
-  const selLang=new Set(['sust','adj','art','verb']);
+  let langGame='mixbasic';
   let countL=10;
+  const GAME_DESC={
+    mixbasic:'Clasificá cada palabra por su tipo: sustantivo, adjetivo, artículo, verbo u otra.',
+    art:'Una frase con un artículo marcado. Decí si es definido o indefinido y su concordancia (género y número).',
+    sust:'Un sustantivo marcado. Decí si es común o propio, y concreto o abstracto.',
+    adj:'Palabra marcada: ¿es adjetivo o verbo? Usá la prueba del tiempo.',
+    verb:'Un verbo marcado. Decí si es acción o estado, e infinitivo o conjugado.'
+  };
+  function renderGameDesc(){ $('#gameDesc').textContent=GAME_DESC[langGame]||''; }
   $('#opsLang').addEventListener('click',e=>{
     const el=e.target.closest('.op');if(!el)return;
-    const op=el.dataset.op;
-    if(selLang.has(op)){if(selLang.size>1)selLang.delete(op);}else selLang.add(op);
-    document.querySelectorAll('#opsLang .op').forEach(x=>x.classList.toggle('on',selLang.has(x.dataset.op)));
-    $('#startBtnL').disabled=selLang.size===0;
+    langGame=el.dataset.game;
+    document.querySelectorAll('#opsLang .op').forEach(x=>x.classList.toggle('on',x.dataset.game===langGame));
+    renderGameDesc();
   });
   const countLInput=$('#countL');
   const clampL=n=>Math.max(1,Math.min(100,n||1));
@@ -1080,195 +1216,333 @@
   countLInput.onblur =()=>{countLInput.value=countL};
   document.querySelectorAll('#setupLang .quick button').forEach(b=>b.onclick=()=>{countL=clampL(parseInt(b.dataset.nl,10));countLInput.value=countL});
 
-  // ================= LENGUA: juego =================
-  // cajas visibles = tipos elegidos + "Otra" siempre
-  let langPhrases=[],lIdx=0,lLog=[],lStart=0,lPhraseStart=0,lTick=null;
-  let placement={}; // wordIndex -> boxType
-  let selectedWord=null;
-  let lPhraseCorrect=0,lPhraseTotal=0;
+  // ================= LENGUA: motor =================
+  const shuffle=a=>[...a].sort(()=>Math.random()-0.5);
+  let lItems=[],lIdx=0,lLog=[],lStart=0,lQStart=0,lTick=null;
+  let lCorrect=0,lTotal=0,lEvaluated=false;
+  // estado de selección para juegos de picks (art/sust/verb/adj)
+  let pickState={};   // rowKey -> value elegido
+  // estado del mixto básico (drag palabras a cajas)
+  let placement={},selectedWord=null;
 
   function startLang(){
-    // arma la ronda: elige frases al azar del banco
-    langPhrases=[];
-    const shuffled=[...PHRASES].sort(()=>Math.random()-0.5);
-    for(let i=0;i<countL;i++) langPhrases.push(shuffled[i%shuffled.length]);
-    lIdx=0;lLog=[];lPhraseCorrect=0;lPhraseTotal=0;
+    lIdx=0;lLog=[];lCorrect=0;lTotal=0;
+    // arma items según el juego
+    if(langGame==='mixbasic'){
+      lItems=shuffle(PHRASES).slice(0,countL);
+      while(lItems.length<countL && PHRASES.length) lItems.push(shuffle(PHRASES)[0]);
+    }else{
+      const bank = langGame==='art'?ART_BANK : langGame==='sust'?SUST_BANK : langGame==='verb'?VERB_BANK : ADJV_BANK;
+      lItems=[];const sh=shuffle(bank);
+      for(let i=0;i<countL;i++) lItems.push(sh[i%sh.length]);
+    }
     only('playLang');
     lStart=performance.now();
     clearInterval(lTick);
     lTick=setInterval(()=>{$('#clockL').textContent=((performance.now()-lStart)/1000).toFixed(1)+'s'},100);
-    showPhrase();
+    showLangItem();
   }
-  function boxTypesForRound(){
-    // cajas de los tipos elegidos, en orden fijo, + Otra al final
-    const order=['art','sust','adj','verb'];
-    const boxes=order.filter(t=>selLang.has(t));
-    boxes.push('otra');
-    return boxes;
+
+  function showLangItem(){
+    $('#progL').textContent=`${lIdx+1} / ${lItems.length}`;
+    $('#barFillL').style.width=(lIdx/lItems.length*100)+'%';
+    $('#explainL').classList.add('hidden');
+    $('#checkL').classList.remove('hidden');
+    lEvaluated=false;
+    if(langGame==='mixbasic'){ showMixBasic(); }
+    else { showPicks(); }
+    lQStart=performance.now();
   }
-  function showPhrase(){
-    const phrase=langPhrases[lIdx];
+
+  // ---------- MIXTO BÁSICO (drag palabras → cajas de tipo) ----------
+  function showMixBasic(){
+    $('#phraseHint').textContent='Tocá una palabra y luego su caja. O arrastrala.';
+    const phrase=lItems[lIdx];
     placement={};selectedWord=null;
-    $('#progL').textContent=`${lIdx+1} / ${langPhrases.length}`;
-    $('#barFillL').style.width=(lIdx/langPhrases.length*100)+'%';
-    // palabras
     const wc=$('#words');wc.innerHTML='';
     phrase.forEach((w,i)=>{
-      const el=document.createElement('div');el.className='word';el.textContent=w[0];el.dataset.i=i;
-      el.setAttribute('draggable','true');
+      const el=document.createElement('div');el.className='word';el.textContent=w[0];el.dataset.i=i;el.setAttribute('draggable','true');
       wc.appendChild(el);
     });
-    // cajas
-    const bc=$('#boxes');bc.innerHTML='';
-    boxTypesForRound().forEach(t=>{
+    const order=['art','sust','adj','verb','otra'];
+    const rows=$('#rows');rows.innerHTML='<div class="boxes" id="boxes"></div>';
+    const bc=$('#boxes');
+    order.forEach(t=>{
       const box=document.createElement('div');box.className='box';box.dataset.type=t;
       box.innerHTML=`<div class="box-t">${LANG_NAME[t]}</div><div class="drop"></div>`;
       bc.appendChild(box);
     });
-    $('#explainL').classList.add('hidden');
-    $('#checkL').classList.remove('hidden');
-    lPhraseStart=performance.now();
   }
-  // selección tap-tap
-  $('#words').addEventListener('click',e=>{
-    const w=e.target.closest('.word');if(!w||w.classList.contains('placed'))return;
-    if(selectedWord===w){w.classList.remove('sel');selectedWord=null;return;}
-    if(selectedWord)selectedWord.classList.remove('sel');
-    selectedWord=w;w.classList.add('sel');
-  });
-  $('#boxes').addEventListener('click',e=>{
-    const box=e.target.closest('.box');
-    const chip=e.target.closest('.chip');
-    if(chip){ // sacar una palabra de la caja de vuelta
-      const wi=parseInt(chip.dataset.wi,10);
-      delete placement[wi];
-      document.querySelector(`.word[data-i="${wi}"]`).classList.remove('placed');
-      renderPlacements();
+
+  // ---------- JUEGOS DE PICKS (filas de opciones) ----------
+  // define las filas según el juego, para el item actual
+  function rowsForItem(){
+    const it=lItems[lIdx];
+    if(langGame==='art'){
+      return [
+        {key:'def',label:'Tipo',cat:'L_art_def',opts:[['def','Definido'],['indef','Indefinido']],correct:it.def},
+        {key:'gen',label:'Género',cat:'L_art_conc',opts:[['m','Masculino'],['f','Femenino']],correct:it.gen},
+        {key:'num',label:'Número',cat:'L_art_conc',opts:[['s','Singular'],['p','Plural']],correct:it.num}
+      ];
+    }
+    if(langGame==='sust'){
+      return [
+        {key:'cp',label:'¿Común o propio?',cat:'L_sust_cp',opts:[['comun','Común'],['propio','Propio']],correct:it.cp},
+        {key:'ca',label:'¿Concreto o abstracto?',cat:'L_sust_ca',opts:[['concreto','Concreto'],['abstracto','Abstracto']],correct:it.ca}
+      ];
+    }
+    if(langGame==='verb'){
+      return [
+        {key:'ae',label:'¿Acción o estado?',cat:'L_verb_ae',opts:[['accion','Acción'],['estado','Estado']],correct:it.ae},
+        {key:'ic',label:'¿Infinitivo o conjugado?',cat:'L_verb_ic',opts:[['inf','Infinitivo'],['conj','Conjugado']],correct:it.ic}
+      ];
+    }
+    if(langGame==='adj'){
+      return [
+        {key:'av',label:'¿Adjetivo o verbo?',cat:'L_adj_vs',opts:[['adj','Adjetivo'],['verb','Verbo']],correct:it.answer}
+      ];
+    }
+    return [];
+  }
+  const GAME_WORDNAME={art:'el artículo',sust:'el sustantivo',adj:null,verb:'el verbo'};
+  let wordChosen=false;  // si ya se eligió correctamente la palabra
+  function showPicks(){
+    const it=lItems[lIdx];
+    pickState={};wordChosen=false;
+    const wc=$('#words');wc.innerHTML='';
+    it.w.forEach((word,i)=>{
+      const el=document.createElement('div');el.className='word';el.textContent=word;el.dataset.i=i;
+      wc.appendChild(el);
+    });
+    $('#rows').innerHTML='';
+    if(langGame==='adj'){
+      // adjetivo: la palabra ya viene marcada (no hay "elegir cuál"), muestra subtipos directo
+      wordChosen=true;
+      markTargetWord();
+      $('#phraseHint').textContent='¿La palabra marcada es adjetivo o verbo?';
+      renderPickRows();
+    }else{
+      $('#phraseHint').textContent=`Tocá cuál es ${GAME_WORDNAME[langGame]} en la frase.`;
+      $('#checkL').textContent='Revisar';
+    }
+  }
+  function markTargetWord(){
+    const it=lItems[lIdx];
+    document.querySelectorAll('#words .word').forEach(w=>w.classList.toggle('target',parseInt(w.dataset.i,10)===it.i));
+  }
+  function renderPickRows(){
+    const rows=$('#rows');rows.innerHTML='';
+    rowsForItem().forEach(row=>{
+      const wrap=document.createElement('div');
+      const cls = row.opts.length===2?'c2':row.opts.length===3?'c3':'c4';
+      wrap.innerHTML=`<div class="row-label">${row.label}</div><div class="row-boxes ${cls}" data-row="${row.key}"></div>`;
+      rows.appendChild(wrap);
+      const rb=wrap.querySelector('.row-boxes');
+      row.opts.forEach(([val,lbl])=>{
+        const p=document.createElement('div');p.className='pick';p.dataset.val=val;p.dataset.row=row.key;p.textContent=lbl;
+        rb.appendChild(p);
+      });
+    });
+  }
+
+  // clicks en picks
+  $('#rows').addEventListener('click',e=>{
+    const pk=e.target.closest('.pick');
+    if(pk){
+      const row=pk.dataset.row;
+      pickState[row]=pk.dataset.val;
+      pk.parentElement.querySelectorAll('.pick').forEach(x=>x.classList.toggle('sel',x===pk));
       return;
     }
-    if(box && selectedWord){
-      const wi=parseInt(selectedWord.dataset.i,10);
-      placement[wi]=box.dataset.type;
-      selectedWord.classList.remove('sel');selectedWord.classList.add('placed');
-      selectedWord=null;
-      renderPlacements();
+    // mixto básico: click en caja o chip
+    const box=e.target.closest('.box');
+    const chip=e.target.closest('.chip');
+    if(chip){const wi=parseInt(chip.dataset.wi,10);delete placement[wi];document.querySelector(`.word[data-i="${wi}"]`).classList.remove('placed');renderPlacements();return;}
+    if(box && selectedWord){const wi=parseInt(selectedWord.dataset.i,10);placement[wi]=box.dataset.type;selectedWord.classList.remove('sel');selectedWord.classList.add('placed');selectedWord=null;renderPlacements();}
+  });
+  // clicks en palabras
+  $('#words').addEventListener('click',e=>{
+    const w=e.target.closest('.word');if(!w)return;
+    if(langGame==='mixbasic'){
+      if(w.classList.contains('placed'))return;
+      if(selectedWord===w){w.classList.remove('sel');selectedWord=null;return;}
+      if(selectedWord)selectedWord.classList.remove('sel');
+      selectedWord=w;w.classList.add('sel');
+      return;
+    }
+    // juegos art/sust/verb: fase de elegir la palabra
+    if(langGame==='adj')return;          // adj no elige palabra
+    if(wordChosen)return;                 // ya se eligió, no cambiar
+    const idx=parseInt(w.dataset.i,10);
+    const it=lItems[lIdx];
+    if(idx===it.i){
+      // acierto: marca y muestra subtipos
+      wordChosen=true;
+      markTargetWord();
+      $('#phraseHint').textContent='Bien. Ahora elegí los subtipos.';
+      renderPickRows();
+    }else{
+      // error: explicación de qué es el tipo, y deja reintentar
+      w.classList.add('err');
+      setTimeout(()=>w.classList.remove('err'),500);
+      $('#exHeadL').textContent='Esa no es';
+      $('#exBodyL').innerHTML=wordPickHelp();
+      $('#explainL').classList.remove('hidden');
+      // registra fallo de identificación en la categoría del tipo básico
+      record(typeToCat[langGame], false);
     }
   });
+  function wordPickHelp(){
+    const help={
+      art:'El <b>artículo</b> es la palabrita que va antes del sustantivo: el, la, los, las, un, una, unos, unas.',
+      sust:'El <b>sustantivo</b> es el nombre de algo. Prueba: si le podés poner "el" o "la" delante y suena bien, es sustantivo.',
+      verb:'El <b>verbo</b> es la acción o el estado. Prueba: es lo único que cambia de tiempo (ayer/hoy/mañana).'
+    };
+    return help[langGame]||'';
+  }
   function renderPlacements(){
     document.querySelectorAll('#boxes .drop').forEach(d=>d.innerHTML='');
-    const phrase=langPhrases[lIdx];
+    const phrase=lItems[lIdx];
     Object.keys(placement).forEach(wi=>{
-      const t=placement[wi];
-      const box=document.querySelector(`.box[data-type="${t}"] .drop`);
+      const t=placement[wi];const box=document.querySelector(`.box[data-type="${t}"] .drop`);
       if(box){const chip=document.createElement('div');chip.className='chip';chip.textContent=phrase[wi][0];chip.dataset.wi=wi;box.appendChild(chip);}
     });
   }
-  // drag & drop (extra, encima del tap-tap)
+  // drag & drop (mixto básico)
   let dragWi=null;
-  $('#words').addEventListener('dragstart',e=>{const w=e.target.closest('.word');if(!w||w.classList.contains('placed')){e.preventDefault();return;}dragWi=parseInt(w.dataset.i,10);w.classList.add('dragging');});
+  $('#words').addEventListener('dragstart',e=>{if(langGame!=='mixbasic')return;const w=e.target.closest('.word');if(!w||w.classList.contains('placed')){e.preventDefault();return;}dragWi=parseInt(w.dataset.i,10);w.classList.add('dragging');});
   $('#words').addEventListener('dragend',e=>{const w=e.target.closest('.word');if(w)w.classList.remove('dragging');});
-  $('#boxes').addEventListener('dragover',e=>{e.preventDefault();const box=e.target.closest('.box');document.querySelectorAll('#boxes .box').forEach(b=>b.classList.remove('hot'));if(box)box.classList.add('hot');});
-  $('#boxes').addEventListener('dragleave',e=>{const box=e.target.closest('.box');if(box)box.classList.remove('hot');});
-  $('#boxes').addEventListener('drop',e=>{
-    e.preventDefault();
-    const box=e.target.closest('.box');if(!box||dragWi===null)return;
-    box.classList.remove('hot');
-    placement[dragWi]=box.dataset.type;
-    const w=document.querySelector(`.word[data-i="${dragWi}"]`);if(w)w.classList.add('placed');
-    dragWi=null;renderPlacements();
-  });
+  $('#rows').addEventListener('dragover',e=>{const box=e.target.closest('.box');if(!box)return;e.preventDefault();document.querySelectorAll('#boxes .box').forEach(b=>b.classList.remove('hot'));box.classList.add('hot');});
+  $('#rows').addEventListener('drop',e=>{const box=e.target.closest('.box');if(!box||dragWi===null)return;e.preventDefault();box.classList.remove('hot');placement[dragWi]=box.dataset.type;const w=document.querySelector(`.word[data-i="${dragWi}"]`);if(w)w.classList.add('placed');dragWi=null;renderPlacements();});
 
-  let lPhraseEvaluated=false;
-  function checkPhrase(){
-    const phrase=langPhrases[lIdx];
-    if(Object.keys(placement).length<phrase.length){
-      $('#exBodyL').innerHTML='Faltan palabras por colocar. Poné todas en una caja (usá <b>Otra</b> si no es ninguno de los tipos).';
-      $('#explainL').classList.remove('hidden');
-      $('#checkL').classList.add('hidden');
-      lPhraseEvaluated=false;
-      return;
-    }
-    const took=(performance.now()-lPhraseStart)/1000;
-    let wordCorrect=0, errors=[];
-    phrase.forEach((w,i)=>{
-      const correct=w[1];
-      const chosen=placement[i];
-      let expectedBox;
-      if(LANG_TYPES.includes(correct) && selLang.has(correct)) expectedBox=correct;
-      else expectedBox='otra';
-      const ok = chosen===expectedBox;
-      if(ok)wordCorrect++;
-      if(LANG_TYPES.includes(correct) && selLang.has(correct)){
-        record(typeToCat[correct], ok);
-      }
-      if(!ok) errors.push({word:w[0],chosen,correct,expectedBox});
-    });
-    lPhraseTotal+=phrase.length;
-    lPhraseCorrect+=wordCorrect;
-    const allOk = wordCorrect===phrase.length;
-    lLog.push({phrase,wordCorrect,total:phrase.length,allOk,took});
-    lPhraseEvaluated=true;
-    document.querySelectorAll('#boxes .box').forEach(box=>{
-      const t=box.dataset.type;
-      const chips=[...box.querySelectorAll('.chip')].map(c=>parseInt(c.dataset.wi,10));
-      let boxOk=true;
-      chips.forEach(wi=>{
-        const correct=phrase[wi][1];
-        let eb = (LANG_TYPES.includes(correct)&&selLang.has(correct))?correct:'otra';
-        if(eb!==t)boxOk=false;
-      });
-      box.classList.add(boxOk?'ok':'err');
-    });
-    if(allOk){
-      setTimeout(()=>{lIdx++;lIdx>=langPhrases.length?finishLang():showPhrase();},500);
-    }else{
-      let html='';
-      errors.forEach(er=>{
-        html+=`<div style="margin-bottom:6px"><b>${er.word}</b>: la pusiste en ${LANG_NAME[er.chosen]}, pero es ${er.correct==='otra'?'otra clase (no es sustantivo/adjetivo/artículo/verbo)':LANG_NAME[er.correct]}. ${whyType(er.word,er.correct)}</div>`;
-      });
-      $('#exBodyL').innerHTML=html;
-      $('#explainL').classList.remove('hidden');
-      $('#checkL').classList.add('hidden');
-    }
+  // ---------- REVISAR ----------
+  function checkLang(){
+    if(langGame==='mixbasic'){ checkMixBasic(); }
+    else { checkPicks(); }
   }
-  function whyType(word,type){
+
+  function expectedBoxFor(correctType){
+    if(LANG_TYPES.includes(correctType)) return correctType;
+    return 'otra';
+  }
+  function checkMixBasic(){
+    const phrase=lItems[lIdx];
+    if(Object.keys(placement).length<phrase.length){
+      $('#exHeadL').textContent='Faltan palabras';
+      $('#exBodyL').innerHTML='Poné todas las palabras en una caja (usá <b>Otra</b> si no es de los 4 tipos).';
+      $('#explainL').classList.remove('hidden');$('#checkL').classList.add('hidden');lEvaluated=false;return;
+    }
+    const took=(performance.now()-lQStart)/1000;
+    let wc=0,errors=[];
+    phrase.forEach((w,i)=>{
+      const correct=w[1], chosen=placement[i], eb=expectedBoxFor(correct);
+      const ok=chosen===eb;if(ok)wc++;
+      if(LANG_TYPES.includes(correct)) record(typeToCat[correct],ok);
+      if(!ok)errors.push({word:w[0],chosen,correct:eb});
+    });
+    lTotal+=phrase.length;lCorrect+=wc;
+    const allOk=wc===phrase.length;
+    lLog.push({label:phrase.map(w=>w[0]).join(' '),correct:wc,total:phrase.length,allOk,took});
+    document.querySelectorAll('#boxes .box').forEach(box=>{
+      const t=box.dataset.type;const chips=[...box.querySelectorAll('.chip')].map(c=>parseInt(c.dataset.wi,10));
+      let bok=true;chips.forEach(wi=>{if(expectedBoxFor(phrase[wi][1])!==t)bok=false;});
+      box.classList.add(bok?'ok':'err');
+    });
+    finishItem(allOk,errors.map(er=>`<b>${er.word}</b>: es ${LANG_NAME[er.correct]}. ${whyType(er.correct)}`));
+  }
+
+  function checkPicks(){
+    // en art/sust/verb hay que haber elegido la palabra primero
+    if(langGame!=='adj' && !wordChosen){
+      $('#exHeadL').textContent='Elegí la palabra';
+      $('#exBodyL').innerHTML=`Primero tocá cuál es ${GAME_WORDNAME[langGame]} en la frase. ${wordPickHelp()}`;
+      $('#explainL').classList.remove('hidden');$('#checkL').classList.add('hidden');lEvaluated=false;return;
+    }
+    const rows=rowsForItem();
+    // exige todas las filas respondidas
+    if(rows.some(r=>pickState[r.key]==null)){
+      $('#exHeadL').textContent='Falta responder';
+      $('#exBodyL').innerHTML='Elegí una opción en cada fila.';
+      $('#explainL').classList.remove('hidden');$('#checkL').classList.add('hidden');lEvaluated=false;return;
+    }
+    const took=(performance.now()-lQStart)/1000;
+    let correctCount=0,errs=[];
+    rows.forEach(r=>{
+      const ok=pickState[r.key]===r.correct;
+      if(ok)correctCount++;
+      record(r.cat,ok);
+      // marcar visualmente
+      const rb=$(`#rows .row-boxes[data-row="${r.key}"]`);
+      rb.querySelectorAll('.pick').forEach(p=>{
+        if(p.dataset.val===r.correct)p.classList.add(ok?'ok':'should');
+        if(p.dataset.val===pickState[r.key]&&!ok)p.classList.add('err');
+      });
+      if(!ok)errs.push(explainPick(r));
+    });
+    lTotal+=rows.length;lCorrect+=correctCount;
+    const allOk=correctCount===rows.length;
+    const it=lItems[lIdx];
+    lLog.push({label:it.w?it.w[it.i]:'',correct:correctCount,total:rows.length,allOk,took});
+    finishItem(allOk,errs);
+  }
+
+  function explainPick(r){
+    const it=lItems[lIdx];
+    const word=it.w[it.i];
+    const val=v=>({def:'definido',indef:'indefinido',m:'masculino',f:'femenino',s:'singular',p:'plural',comun:'común',propio:'propio',concreto:'concreto',abstracto:'abstracto',accion:'acción',estado:'estado',inf:'infinitivo',conj:'conjugado',adj:'adjetivo',verb:'verbo'}[v]||v);
     const reasons={
-      sust:'Es el nombre de una cosa, persona o idea.',
-      adj:'Dice cómo es algo (cualidad).',
-      art:'Es la palabrita que va antes del sustantivo (el, la, un, una, los, las).',
-      verb:'Es una acción o estado (lo que hace o cómo está algo).',
-      otra:'Es un adverbio, pronombre, preposición o posesivo — todavía no entra en los 4 tipos que practicás.'
+      def:`"${word}" es <b>${val(r.correct)}</b>. Definido (el, la, los, las) = algo específico; indefinido (un, una, unos, unas) = uno cualquiera.`,
+      gen:`"${word}" es <b>${val(r.correct)}</b> por el sustantivo al que acompaña.`,
+      num:`"${word}" es <b>${val(r.correct)}</b>: singular = uno, plural = varios.`,
+      cp:`"${word}" es <b>${val(r.correct)}</b>. Propio = nombre único con mayúscula; común = categoría general.`,
+      ca:`"${word}" es <b>${val(r.correct)}</b>. Concreto = lo podés tocar; abstracto = existe pero no lo agarrás.`,
+      ae:`"${word}" es <b>${val(r.correct)}</b>. Acción = hace algo; estado = cómo está (ser, estar, parecer).`,
+      ic:`"${word}" es <b>${val(r.correct)}</b>. Probá con "yo": "yo ${word}" suena bien = conjugado; suena roto = infinitivo.`,
+      av:`"${word}" es <b>${val(r.correct)}</b>. Prueba del tiempo: si le cambiás el tiempo (era, será) es verbo; si no, es adjetivo.`
     };
-    return reasons[type]||'';
+    return reasons[r.key]||`Era ${val(r.correct)}.`;
+  }
+  function whyType(type){
+    return ({sust:'Es el nombre de una cosa, persona o idea.',adj:'Dice cómo es algo.',art:'Va antes del sustantivo (el, la, un, una).',verb:'Es acción o estado.',otra:'Es adverbio, pronombre, preposición o posesivo.'})[type]||'';
+  }
+
+  function finishItem(allOk,errLines){
+    lEvaluated=true;
+    if(allOk){
+      setTimeout(()=>{lIdx++;lIdx>=lItems.length?finishLang():showLangItem();},500);
+    }else{
+      $('#exHeadL').textContent='Corrección';
+      $('#exBodyL').innerHTML=errLines.map(l=>`<div style="margin-bottom:6px">${l}</div>`).join('');
+      $('#explainL').classList.remove('hidden');$('#checkL').classList.add('hidden');
+    }
   }
   function continueLang(){
-    $('#explainL').classList.add('hidden');
-    $('#checkL').classList.remove('hidden');
-    if(lPhraseEvaluated){ lPhraseEvaluated=false; lIdx++; lIdx>=langPhrases.length?finishLang():showPhrase(); }
+    $('#explainL').classList.add('hidden');$('#checkL').classList.remove('hidden');
+    if(lEvaluated){lEvaluated=false;lIdx++;lIdx>=lItems.length?finishLang():showLangItem();}
   }
   function finishLang(){
     clearInterval(lTick);
     $('#barFillL').style.width='100%';
     only('resultsLang');
     const total=(performance.now()-lStart)/1000;
-    $('#rlCorrect').textContent=lPhraseCorrect;
-    $('#rlTotal').textContent=lPhraseTotal;
-    $('#rlSub').textContent = lPhraseCorrect===lPhraseTotal?'perfecto':`${lPhraseTotal-lPhraseCorrect} falladas`;
+    $('#rlCorrect').textContent=lCorrect;
+    $('#rlTotal').textContent=lTotal;
+    $('#rlSub').textContent=lCorrect===lTotal?'perfecto':`${lTotal-lCorrect} falladas`;
     $('#rlPhrases').textContent=lLog.length;
     $('#rlTime').textContent=fmt(total);
     const rev=$('#reviewL');rev.innerHTML='';
     lLog.forEach(x=>{
-      const txt=x.phrase.map(w=>w[0]).join(' ');
       const d=document.createElement('div');d.className='rev'+(x.allOk?'':' miss');
-      d.innerHTML=`<span class="exp">${txt}</span><span>${x.wordCorrect}/${x.total} ${x.allOk?'<span class="tick">✓</span>':''}</span>`;
+      d.innerHTML=`<span class="exp">${x.label}</span><span>${x.correct}/${x.total} ${x.allOk?'<span class="tick">✓</span>':''}</span>`;
       rev.appendChild(d);
     });
   }
-  $('#checkL').onclick=checkPhrase;
+  $('#checkL').onclick=checkLang;
   $('#exContL').onclick=continueLang;
   $('#quitL').onclick=()=>{clearInterval(lTick);only('setupLang');};
   $('#startBtnL').onclick=startLang;
   $('#againL').onclick=()=>only('setupLang');
+
 
   // ================= JUEGO =================
   let probs=[],idx=0,log=[],tStart=0,qStart=0,tickTimer=null,mode='mental',allowNeg=false;
@@ -1462,11 +1736,17 @@
     {t:'Jerarquía de operaciones',b:'Se resuelve en este orden:<br>1. Paréntesis ( )<br>2. Potencias y raíces (3², √)<br>3. Multiplicación y división (× ÷)<br>4. Sumas y restas (+ −)<br><span class="ex">−3 + 4 × (−2) = −3 + (−8) = −11</span>'}
   ];
   const FORMULAS_LANG=[
-    {t:'Sustantivo',b:'Es el nombre de una cosa, persona, lugar o idea. <span class="ex">perro, mesa, Luis, amor</span>'},
-    {t:'Adjetivo',b:'Dice cómo es esa cosa (su cualidad). <span class="ex">grande, rojo, feo, bonito</span>'},
-    {t:'Artículo',b:'Es la palabrita que va antes del nombre. <span class="ex">el, la, un, una, los, las</span>'},
-    {t:'Verbo',b:'Es lo que hace o el estado de algo (acción o estado). <span class="ex">correr, comer, ser, es, está</span>'},
-    {t:'Todo junto',b:'<span class="ex">El perro es grande</span> → El = artículo · perro = sustantivo · es = verbo · grande = adjetivo'}
+    {t:'Artículo — qué es',b:'Va antes del sustantivo para presentarlo. No tiene significado propio, solo acompaña. <span class="ex">el, la, un, una</span>'},
+    {t:'Artículo — definido / indefinido',b:'<b>Definido</b> (el, la, los, las) = algo específico, ya sabés cuál. <b>Indefinido</b> (un, una, unos, unas) = uno cualquiera. <span class="ex">el perro = ese perro / un perro = cualquiera</span>'},
+    {t:'Artículo — concordancia',b:'El artículo copia el género y número del sustantivo. <span class="ex">el perro / la perra / los perros / las perras</span>. Si no concuerda suena roto: "la perro" ✗'},
+    {t:'Sustantivo — qué es',b:'El nombre de algo (cosa, persona, animal, lugar, idea). Prueba: si le podés poner "el" o "la" delante y suena bien, es sustantivo. <span class="ex">la montaña ✓</span>'},
+    {t:'Sustantivo — común / propio',b:'<b>Común</b> = categoría general, minúscula (perro, país, río). <b>Propio</b> = nombre único, mayúscula (Firulais, Venezuela, Orinoco).'},
+    {t:'Sustantivo — concreto / abstracto',b:'<b>Concreto</b> = lo podés tocar (silla, perro, agua). <b>Abstracto</b> = existe pero no lo agarrás (amor, miedo, libertad). Truco: ¿lo metés en una caja?'},
+    {t:'Adjetivo — qué es',b:'Dice cómo es el sustantivo, lo describe. Cambia junto con él (concordancia): <span class="ex">perro negro → perra negra → perros negros</span>'},
+    {t:'Adjetivo vs Verbo (tu error repetido)',b:'Prueba del tiempo. En "la montaña es enorme": <b>es</b> → cambia de tiempo (era, será) = verbo. <b>enorme</b> → no existe "enormará" = adjetivo. El adjetivo describe y se pega al sustantivo; el verbo cambia con el tiempo.'},
+    {t:'Verbo — qué es',b:'La acción o el estado de algo. Prueba: es lo único que cambia de tiempo. <span class="ex">es → era → será ✓</span>'},
+    {t:'Verbo — infinitivo / conjugado',b:'<b>Infinitivo</b> = la acción sola, sin dueño (saltar, correr, comer). <b>Conjugado</b> = alguien lo hace (yo salto, él corre). Prueba: ponele "yo" adelante. "yo saltar" ✗ = infinitivo; "yo salto" ✓ = conjugado.'},
+    {t:'Todo junto',b:'<span class="ex">El perro es grande</span> → El = artículo definido masc. sing. · perro = sustantivo común concreto · es = verbo estado conjugado · grande = adjetivo'}
   ];
   function renderFormulas(){
     $('#fMental').innerHTML=FORMULAS_MENTAL.map(f=>`<div class="formula"><div class="ft">${f.t}</div><div class="fb">${f.b}</div></div>`).join('');
@@ -1523,6 +1803,7 @@
 
   // init
   renderOps();
+  renderGameDesc();
   subject='root';
   only('root');
 })();
