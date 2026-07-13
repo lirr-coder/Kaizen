@@ -142,6 +142,9 @@
   .word.sel{border-color:var(--accent);background:#eef0fc;color:var(--accent)}
   .word.placed{opacity:.35;pointer-events:none}
   .word.dragging{opacity:.5}
+  .word.ok{border-color:var(--right);background:#eefaf5;color:var(--right);font-weight:700}
+  .word.err{border-color:var(--wrong);background:#fdf1f2;color:var(--wrong)}
+  .word.should{border-color:var(--right);border-style:dashed}
   .boxes{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:4px}
   .box{background:var(--panel);border:1.5px dashed var(--line);border-radius:12px;padding:12px;min-height:74px;transition:.12s}
   .box.hot{border-color:var(--accent);background:#eef0fc}
@@ -169,6 +172,18 @@
   .pick.err{border-color:var(--wrong);background:#fdf1f2;color:var(--wrong)}
   .pick.should{border-color:var(--right);border-style:dashed}
   .hidden{display:none}
+  /* entrada de fracción */
+  .frac-input{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:4px}
+  .fin{width:140px;background:var(--panel-2);border:2px solid var(--line);border-radius:12px;color:var(--ink);text-align:center;font-family:var(--num);font-size:30px;font-weight:700;padding:10px}
+  .fin:focus{outline:none}
+  .fin.active{border-color:var(--accent);background:#eef0fc}
+  .fin.bad{border-color:var(--wrong);animation:shake .3s}
+  .fin-bar{width:150px;height:3px;background:var(--ink);border-radius:2px}
+  .frac-hint{font-size:12px;color:var(--ink-dim);text-align:center;margin-top:10px}
+  .q .fracq{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 2px}
+  .q .fracq .fn{border-bottom:2px solid currentColor;line-height:1.1;padding:0 4px}
+  .q .fracq .fd{line-height:1.1;padding:0 4px}
+  .q .whole{margin-right:2px}
 </style>
 </head>
 <body>
@@ -213,6 +228,11 @@
         <span class="mi">−5 + (−3)</span>
         <span class="mt">Números enteros</span>
         <span class="md">Enteros con signo, ley de los signos y jerarquía</span>
+      </button>
+      <button class="modebtn" data-mode="frac">
+        <span class="mi">1/2 + 1/3</span>
+        <span class="mt">Fracciones</span>
+        <span class="md">Suma y resta: mismo denominador, distinto y mixto</span>
       </button>
     </div>
   </section>
@@ -348,6 +368,32 @@
     <button class="start" id="startBtnN">Empezar</button>
   </section>
 
+  <!-- ===== SETUP FRACCIONES ===== -->
+  <section id="setupFrac" class="hidden">
+    <button class="back" id="backFrac">← Modos</button>
+    <div class="card" style="margin-bottom:16px">
+      <h2>Fracciones · suma y resta</h2>
+      <div class="ops" id="opsFrac">
+        <div class="op on" data-op="fsame"><span class="sym">a/n ± b/n</span><span class="lbl">Mismo denom.</span></div>
+        <div class="op" data-op="fdiff"><span class="sym">a/m ± b/n</span><span class="lbl">Distinto denom.</span></div>
+        <div class="op" data-op="fmix"><span class="sym">1½ ± ⅔</span><span class="lbl">Mixto</span></div>
+      </div>
+      <div class="game-desc" id="fracDesc"></div>
+      <div class="field">
+        <label>¿Cuántos ejercicios?</label>
+        <div class="stepper">
+          <button id="minusF">−</button>
+          <input id="countF" type="number" inputmode="numeric" value="10" min="1" max="200">
+          <button id="plusF">+</button>
+        </div>
+        <div class="quick">
+          <button data-nf="10">10</button><button data-nf="20">20</button><button data-nf="40">40</button><button data-nf="100">100</button>
+        </div>
+      </div>
+    </div>
+    <button class="start" id="startBtnF">Empezar</button>
+  </section>
+
   <!-- ===== PLAY ===== -->
   <section id="play" class="hidden">
     <div class="playtop">
@@ -371,6 +417,38 @@
       <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
       <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
       <button class="sign" data-k="sign" id="signKey">±</button><button data-k="0">0</button><button class="go" data-k="go">↵</button>
+      <button class="del" data-k="del" style="grid-column:2 / 3">⌫</button>
+    </div>
+  </section>
+
+  <!-- ===== PLAY FRACCIONES ===== -->
+  <section id="playFrac" class="hidden">
+    <div class="playtop">
+      <span class="prog" id="progF">1 / 10</span>
+      <span class="clock" id="clockF">0.0s</span>
+      <button class="quit" id="quitF">✕</button>
+    </div>
+    <div class="bar"><div id="barFillF"></div></div>
+    <div class="prob">
+      <div class="live" id="liveF"></div>
+      <div class="q" id="qTextF">— + —</div>
+    </div>
+    <div class="frac-input" id="fracInput">
+      <input class="fin fin-num" id="fNum" inputmode="numeric" placeholder="?" readonly>
+      <div class="fin-bar"></div>
+      <input class="fin fin-den" id="fDen" inputmode="numeric" placeholder="?" readonly>
+    </div>
+    <div class="frac-hint" id="fracHint">Escribí la fracción ya simplificada.</div>
+    <div class="explain hidden" id="explainF">
+      <div class="ex-head">Respuesta correcta: <b id="exAnsF"></b></div>
+      <div class="ex-body" id="exBodyF"></div>
+      <button class="ex-cont" id="exContF">Continuar →</button>
+    </div>
+    <div class="pad" id="padF">
+      <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+      <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+      <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+      <button class="sign" data-k="sign" id="signKeyF">±</button><button data-k="0">0</button><button class="go" data-k="go">↵</button>
       <button class="del" data-k="del" style="grid-column:2 / 3">⌫</button>
     </div>
   </section>
@@ -420,6 +498,10 @@
       <h2>Números enteros</h2>
       <div id="fNeg"></div>
     </div>
+    <div class="card" id="fBlockFrac" style="margin-bottom:16px">
+      <h2>Fracciones</h2>
+      <div id="fFrac"></div>
+    </div>
     <div class="card fcard-lang" id="fBlockLang">
       <h2>Lengua · Clases de palabras</h2>
       <div id="fLang"></div>
@@ -437,6 +519,10 @@
         <div class="op" data-game="sust"><span class="sym">📦</span><span class="lbl">Sustantivos</span></div>
         <div class="op" data-game="adj"><span class="sym">🎨</span><span class="lbl">Adjetivos</span></div>
         <div class="op" data-game="verb"><span class="sym">⚡</span><span class="lbl">Verbos</span></div>
+        <div class="op" data-game="adv"><span class="sym">🏃</span><span class="lbl">Adverbios</span></div>
+        <div class="op" data-game="pron"><span class="sym">🔁</span><span class="lbl">Pronombres</span></div>
+        <div class="op" data-game="prep"><span class="sym">🔗</span><span class="lbl">Preposiciones</span></div>
+        <div class="op" data-game="conj"><span class="sym">➕</span><span class="lbl">Conjunciones</span></div>
       </div>
       <div class="game-desc" id="gameDesc"></div>
       <div class="field">
@@ -495,18 +581,20 @@
 <script>
 (function(){
   const $ = s => document.querySelector(s);
-  const SEC=['root','home','setup','setupNeg','play','results','dash','formulas','setupLang','playLang','resultsLang'];
+  const SEC=['root','home','setup','setupNeg','setupFrac','play','playFrac','results','dash','formulas','setupLang','playLang','resultsLang'];
   const secEl={};SEC.forEach(s=>secEl[s]=$('#'+s));
   function only(name){SEC.forEach(s=>secEl[s].classList.toggle('hidden', s!==name));}
   let subject='root'; // 'root' | 'math' | 'lang' — contexto para Progreso/Fórmulas
 
   // ---------- constantes ----------
-  const SYM={add:'+',sub:'−',mul:'×',div:'÷',pct:'%',nadd:'+',nsub:'−',nmul:'×',ndiv:'÷',nchain:'( )',nchainmd:'×÷',nchainmix:'±×',nchainabs:'|±|',howq:'−a'};
-  const NAME={add:'Suma',sub:'Resta',mul:'Mult',div:'División',pct:'Porcentaje',nadd:'Suma −',nsub:'Resta −',nmul:'Mult −',ndiv:'Div −',nchain:'Cadena +−',nchainmd:'Cadena ×÷',nchainmix:'Cadena mixta',nchainabs:'Mixta+abs',howq:'¿Cómo queda?'};
+  const SYM={add:'+',sub:'−',mul:'×',div:'÷',pct:'%',nadd:'+',nsub:'−',nmul:'×',ndiv:'÷',nchain:'( )',nchainmd:'×÷',nchainmix:'±×',nchainabs:'|±|',howq:'−a',fsame:'a/n',fdiff:'a/m',fmix:'1½'};
+  const NAME={add:'Suma',sub:'Resta',mul:'Mult',div:'División',pct:'Porcentaje',nadd:'Suma −',nsub:'Resta −',nmul:'Mult −',ndiv:'Div −',nchain:'Cadena +−',nchainmd:'Cadena ×÷',nchainmix:'Cadena mixta',nchainabs:'Mixta+abs',howq:'¿Cómo queda?',fsame:'Frac mismo den',fdiff:'Frac distinto den',fmix:'Frac mixto'};
   // categorías mentales
   const CATS_MENTAL=['add1','add2','add3','sub1','sub2','sub3','mul1','mul2','mul3','div1','div2','div3','pct1','pct2','howq1'];
   // categorías negativos
   const CATS_NEG=['nadd1','nadd2','nadd3','nsub1','nsub2','nsub3','nmul1','nmul2','ndiv1','ndiv2','nchain3','nchain4','nchain5','nchainmd3','nchainmd4','nchainmd5','nchainmix3','nchainmix4','nchainmix5','nchainabs3','nchainabs4','nchainabs5'];
+  // categorías fracciones (suma y resta)
+  const CATS_FRAC=['fsame1','fdiff1','fmix1'];
   // (CATS se define más abajo, tras las categorías de lengua)
   const CAT_INFO={
     add1:{op:'add',label:'0–99'},   add2:{op:'add',label:'100–499'}, add3:{op:'add',label:'500–999'},
@@ -522,16 +610,17 @@
     nchain3:{op:'nchain',label:'3 térm'},nchain4:{op:'nchain',label:'4 térm'},nchain5:{op:'nchain',label:'5 térm'},
     nchainmd3:{op:'nchainmd',label:'3 térm'},nchainmd4:{op:'nchainmd',label:'4 térm'},nchainmd5:{op:'nchainmd',label:'5 térm'},
     nchainmix3:{op:'nchainmix',label:'3 térm'},nchainmix4:{op:'nchainmix',label:'4 térm'},nchainmix5:{op:'nchainmix',label:'5 térm'},
-    nchainabs3:{op:'nchainabs',label:'3 térm'},nchainabs4:{op:'nchainabs',label:'4 térm'},nchainabs5:{op:'nchainabs',label:'5 térm'}
+    nchainabs3:{op:'nchainabs',label:'3 térm'},nchainabs4:{op:'nchainabs',label:'4 térm'},nchainabs5:{op:'nchainabs',label:'5 térm'},
+    fsame1:{op:'fsame',label:'mismo den'},fdiff1:{op:'fdiff',label:'distinto den'},fmix1:{op:'fmix',label:'mixto'}
   };
   const OPS_MENTAL=['add','sub','mul','div','pct','howq'];
   const OPS_NEG=['nadd','nsub','nmul','ndiv','nchain','nchainmd','nchainmix','nchainabs'];
   // ---- lengua: clases de palabras ----
-  const LANG_TYPES=['sust','adj','art','verb'];
-  const LANG_NAME={sust:'Sustantivo',adj:'Adjetivo',art:'Artículo',verb:'Verbo',otra:'Otra'};
+  const LANG_TYPES=['sust','adj','art','verb','adv','pron','prep','conj'];
+  const LANG_NAME={sust:'Sustantivo',adj:'Adjetivo',art:'Artículo',verb:'Verbo',adv:'Adverbio',pron:'Pronombre',prep:'Preposición',conj:'Conjunción',otra:'Otra'};
   // categorías de progreso: tipo básico + subcapas
   const CATS_LANG=[
-    'L_sust','L_adj','L_art','L_verb',          // reconocer tipo (mixto básico)
+    'L_sust','L_adj','L_art','L_verb','L_adv','L_pron','L_prep','L_conj',  // reconocer tipo (mixto básico + juegos)
     'L_art_def','L_art_conc',                    // artículo: definido/indef, concordancia
     'L_sust_cp','L_sust_ca',                      // sustantivo: común/propio, concreto/abstracto
     'L_verb_ae','L_verb_ic',                      // verbo: acción/estado, infinitivo/conjugado
@@ -539,16 +628,17 @@
   ];
   const CAT_LANG_INFO={
     L_sust:{label:'Sustantivo'},L_adj:{label:'Adjetivo'},L_art:{label:'Artículo'},L_verb:{label:'Verbo'},
+    L_adv:{label:'Adverbio'},L_pron:{label:'Pronombre'},L_prep:{label:'Preposición'},L_conj:{label:'Conjunción'},
     L_art_def:{label:'Art: def/indef'},L_art_conc:{label:'Art: concord.'},
     L_sust_cp:{label:'Sust: común/propio'},L_sust_ca:{label:'Sust: concr/abstr'},
     L_verb_ae:{label:'Verbo: acc/estado'},L_verb_ic:{label:'Verbo: inf/conj'},
     L_adj_vs:{label:'Adj vs Verbo'}
   };
-  const typeToCat={sust:'L_sust',adj:'L_adj',art:'L_art',verb:'L_verb'};
-  const CATS=[...CATS_MENTAL,...CATS_NEG,...CATS_LANG];
+  const typeToCat={sust:'L_sust',adj:'L_adj',art:'L_art',verb:'L_verb',adv:'L_adv',pron:'L_pron',prep:'L_prep',conj:'L_conj'};
+  const CATS=[...CATS_MENTAL,...CATS_NEG,...CATS_FRAC,...CATS_LANG];
   function catOf(op,val){return op+val;}
 
-  const KEY='practicaMental_v12';
+  const KEY='practicaMental_v13';
   function blankCats(){const o={};CATS.forEach(c=>o[c]=0);return o;}
   function blankData(){return {streak:blankCats(),best:blankCats(),total:blankCats(),days:{}};}
   function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(!d||!d.streak)return blankData();
@@ -768,30 +858,58 @@
     const ops=['×'];for(let i=2;i<nTerms;i++)ops.push('+');
     return {terms,ops,ans:evalMix(terms,ops),text:terms.map((t,i)=>i===0?t:` ${ops[i-1]} ${t}`).join('')};
   }
-  // cadena mixta que además envuelve uno o dos términos en valor absoluto |x|
+  // cadena mixta donde el valor absoluto envuelve una operación completa,
+  // no un solo número: |−8 + 4|, |−3 × 2 − 5|, etc. (con jerarquía adentro)
+  // Estructura: una cadena principal de términos, donde 1 o 2 términos son
+  // en realidad un bloque |…| que contiene su propia subexpresión.
+  function makeAbsInner(){
+    // subexpresión de 2 o 3 términos con jerarquía interna, resultado entero
+    for(let attempt=0;attempt<200;attempt++){
+      const n = Math.random()<0.55?2:3;
+      const terms=[];
+      for(let i=0;i<n;i++){const mag=rnd(2,12);const sign=Math.random()<0.5?-1:1;terms.push(mag*sign);}
+      const ops=[];for(let i=1;i<n;i++)ops.push(pick(['+','−','×','÷']));
+      const val=evalMix(terms,ops);
+      if(val===null||!Number.isInteger(val))continue;
+      let inner=`${terms[0]}`;
+      for(let i=1;i<n;i++){const t=terms[i];inner+=` ${ops[i-1]} ${t<0?'('+t+')':t}`;}
+      return {terms,ops,val,inner};        // val = valor SIN el absoluto todavía
+    }
+    // fallback simple
+    const a=rnd(2,9),b=rnd(2,9);
+    return {terms:[-a,b],ops:['+'],val:-a+b,inner:`${-a} + ${b}`};
+  }
   function makeChainAbs(nTerms){
     for(let attempt=0;attempt<400;attempt++){
-      const terms=[];
-      for(let i=0;i<nTerms;i++){const mag=rnd(2,12);const sign=Math.random()<0.5?-1:1;terms.push(mag*sign);}
-      const ops=[];
-      for(let i=1;i<nTerms;i++){ops.push(pick(['+','−','×','÷']));}
-      const absFlags=terms.map(()=>false);
-      const nAbs = Math.random()<0.5?1:2;
-      const idxs=shuffleArr([...terms.keys()]).slice(0,nAbs);
-      idxs.forEach(i=>absFlags[i]=true);
-      const effTerms=terms.map((t,i)=>absFlags[i]?Math.abs(t):t);
-      const val=evalMix(effTerms,ops);
-      if(val===null||!Number.isInteger(val)) continue;
-      let text=absFlags[0]?`|${terms[0]}|`:`${terms[0]}`;
-      for(let i=1;i<nTerms;i++){
-        const t=terms[i];
-        const shown = absFlags[i] ? `|${t}|` : (t<0?`(${t})`:`${t}`);
-        text+=` ${ops[i-1]} ${shown}`;
+      // 1..nTerms "slots" en la cadena principal; cada slot es un número normal
+      // o un bloque absoluto con operación interna.
+      const slots=[];           // {kind:'num'|'abs', text, effVal}
+      const nAbs = (nTerms>=4 && Math.random()<0.4) ? 2 : 1;   // 1 (o a veces 2) bloques abs
+      const absPositions=shuffleArr([...Array(nTerms).keys()]).slice(0,nAbs);
+      for(let i=0;i<nTerms;i++){
+        if(absPositions.includes(i)){
+          const inner=makeAbsInner();
+          slots.push({kind:'abs', text:`|${inner.inner}|`, effVal:Math.abs(inner.val), inner});
+        }else{
+          const mag=rnd(2,12), sign=Math.random()<0.5?-1:1;
+          const v=mag*sign;
+          slots.push({kind:'num', text:(v<0?`(${v})`:`${v}`), effVal:v, raw:v});
+        }
       }
-      return {terms,ops,absFlags,effTerms,ans:val,text};
+      const ops=[];for(let i=1;i<nTerms;i++)ops.push(pick(['+','−','×','÷']));
+      const effTerms=slots.map(s=>s.effVal);
+      const val=evalMix(effTerms,ops);
+      if(val===null||!Number.isInteger(val))continue;
+      let text=slots[0].text;
+      for(let i=1;i<nTerms;i++) text+=` ${ops[i-1]} ${slots[i].text}`;
+      return {slots,ops,effTerms,ans:val,text};
     }
-    const d=makeChainMix(nTerms);
-    return {terms:d.terms,ops:d.ops,absFlags:d.terms.map(()=>false),effTerms:d.terms,ans:d.ans,text:d.text};
+    // fallback: un solo bloque absoluto simple + un número
+    const inner=makeAbsInner();
+    const b=rnd(2,9);
+    const effTerms=[Math.abs(inner.val),b];const ops=['+'];
+    return {slots:[{kind:'abs',text:`|${inner.inner}|`,effVal:Math.abs(inner.val),inner},{kind:'num',text:`${b}`,effVal:b,raw:b}],
+            ops,effTerms,ans:Math.abs(inner.val)+b,text:`|${inner.inner}| + ${b}`};
   }
   function shuffleArr(a){return a.sort(()=>Math.random()-0.5);}
 
@@ -939,13 +1057,26 @@
     return `× y ÷ van de izquierda a derecha, multiplicando los signos: ${steps.join(' → ')}. Resultado: <b>${acc}</b>.`;
   }
   function explainChainAbs(p){
-    // primero resolver los valores absolutos, luego evaluar la cadena con jerarquía
-    const parts=p.terms.map((t,i)=>p.absFlags[i]?`|${t}| = ${Math.abs(t)}`:null).filter(Boolean);
+    // paso 1: resolver cada bloque de valor absoluto (operación interna primero)
     let s='';
-    if(parts.length) s+=`Primero los valores absolutos: ${parts.join(', ')} (lo de adentro se vuelve positivo). `;
-    // reusar explainChainMix con términos efectivos
+    const absParts=[];
+    p.slots.forEach(sl=>{
+      if(sl.kind==='abs'){
+        const inner=sl.inner;
+        // ¿la subexpresión interna tiene más de un término? mostrar su cálculo
+        if(inner.terms.length>1){
+          absParts.push(`|${inner.inner}| → adentro da ${inner.val}, y el absoluto lo vuelve positivo → ${Math.abs(inner.val)}`);
+        }else{
+          absParts.push(`|${inner.inner}| = ${Math.abs(inner.val)}`);
+        }
+      }
+    });
+    if(absParts.length){
+      s+=`Primero resolvés lo de adentro de cada barra y lo volvés positivo: ${absParts.join('; ')}. `;
+    }
+    // paso 2: cadena principal con los bloques ya reemplazados por su valor
     const eff={terms:p.effTerms,ops:p.ops};
-    s+=explainChainMix(eff).replace(/^/,'Luego la jerarquía: ');
+    s+='Luego la cadena con jerarquía: '+explainChainMix(eff);
     return s;
   }
   function explainChainMix(p){
@@ -1088,7 +1219,7 @@
     if(op==='nchainabs'){
       const n=pick([...cfgChainAbs]);
       const d=makeChainAbs(n);
-      return {op,cat:catOf('nchainabs',n),terms:d.terms,ops:d.ops,absFlags:d.absFlags,effTerms:d.effTerms,ans:d.ans,text:d.text};
+      return {op,cat:catOf('nchainabs',n),slots:d.slots,ops:d.ops,effTerms:d.effTerms,ans:d.ans,text:d.text};
     }
     if(op==='nmul'||op==='ndiv'){
       const fmt=pick([...(op==='nmul'?cfgNmul:cfgNdiv)]);
@@ -1102,106 +1233,134 @@
 
   // ================= LENGUA: banco de frases =================
   // cada palabra: [texto, tipo]. tipos: sust, adj, art, verb, otra
+  // Clases: art, sust, adj, verb, adv (adverbio), pron (pronombre),
+  // prep (preposición), conj (conjunción), otra (posesivos/demostrativos determinantes).
   const PHRASES=[
     [['El','art'],['perro','sust'],['es','verb'],['grande','adj']],
     [['La','art'],['casa','sust'],['está','verb'],['limpia','adj']],
     [['Un','art'],['gato','sust'],['negro','adj'],['duerme','verb']],
-    [['Luis','sust'],['corre','verb'],['rápido','adj']],
+    [['Luis','sust'],['corre','verb'],['rápido','adv']],
     [['La','art'],['flor','sust'],['es','verb'],['bonita','adj']],
     [['El','art'],['niño','sust'],['come','verb'],['una','art'],['manzana','sust']],
-    [['Mi','otra'],['hermana','sust'],['canta','verb'],['bien','otra']],
+    [['Mi','otra'],['hermana','sust'],['canta','verb'],['bien','adv']],
     [['El','art'],['carro','sust'],['rojo','adj'],['es','verb'],['veloz','adj']],
-    [['Los','art'],['pájaros','sust'],['vuelan','verb'],['alto','otra']],
-    [['Ella','otra'],['tiene','verb'],['un','art'],['libro','sust'],['viejo','adj']],
+    [['Los','art'],['pájaros','sust'],['vuelan','verb'],['alto','adv']],
+    [['Ella','pron'],['tiene','verb'],['un','art'],['libro','sust'],['viejo','adj']],
     [['La','art'],['comida','sust'],['está','verb'],['caliente','adj']],
     [['Un','art'],['hombre','sust'],['alto','adj'],['camina','verb']],
     [['El','art'],['cielo','sust'],['es','verb'],['azul','adj']],
     [['María','sust'],['lee','verb'],['una','art'],['revista','sust']],
     [['El','art'],['café','sust'],['está','verb'],['frío','adj']],
     [['Los','art'],['zapatos','sust'],['nuevos','adj'],['son','verb'],['cómodos','adj']],
-    [['Mi','otra'],['perro','sust'],['ladra','verb'],['mucho','otra']],
+    [['Mi','otra'],['perro','sust'],['ladra','verb'],['mucho','adv']],
     [['La','art'],['montaña','sust'],['es','verb'],['enorme','adj']],
-    [['Un','art'],['río','sust'],['cristalino','adj'],['corre','verb'],['abajo','otra']],
+    [['Un','art'],['río','sust'],['cristalino','adj'],['corre','verb'],['abajo','adv']],
     [['El','art'],['profesor','sust'],['explica','verb'],['la','art'],['lección','sust']],
     [['La','art'],['luna','sust'],['brilla','verb'],['esta','otra'],['noche','sust']],
     [['Ese','otra'],['edificio','sust'],['es','verb'],['moderno','adj']],
     [['El','art'],['agua','sust'],['fría','adj'],['refresca','verb']],
     [['Una','art'],['mujer','sust'],['elegante','adj'],['entra','verb']],
-    [['Los','art'],['estudiantes','sust'],['leen','verb'],['mucho','otra']],
-    [['El','art'],['sol','sust'],['brilla','verb'],['fuerte','adj']],
+    [['Los','art'],['estudiantes','sust'],['leen','verb'],['mucho','adv']],
+    [['El','art'],['sol','sust'],['brilla','verb'],['fuerte','adv']],
     [['Una','art'],['nube','sust'],['blanca','adj'],['pasa','verb']],
-    [['Mi','otra'],['abuela','sust'],['cocina','verb'],['rico','otra']],
-    [['El','art'],['tren','sust'],['llega','verb'],['tarde','otra']],
+    [['Mi','otra'],['abuela','sust'],['cocina','verb'],['rico','adv']],
+    [['El','art'],['tren','sust'],['llega','verb'],['tarde','adv']],
     [['La','art'],['maestra','sust'],['es','verb'],['paciente','adj']],
     [['Un','art'],['perro','sust'],['pequeño','adj'],['juega','verb']],
     [['Ese','otra'],['libro','sust'],['es','verb'],['interesante','adj']],
     [['La','art'],['ciudad','sust'],['es','verb'],['ruidosa','adj']],
     [['Pedro','sust'],['escribe','verb'],['una','art'],['carta','sust'],['larga','adj']],
-    [['El','art'],['viento','sust'],['sopla','verb'],['frío','adj']],
-    [['Las','art'],['flores','sust'],['huelen','verb'],['bien','otra']],
-    [['Mi','otra'],['papá','sust'],['trabaja','verb'],['duro','otra']],
+    [['El','art'],['viento','sust'],['sopla','verb'],['frío','adv']],
+    [['Las','art'],['flores','sust'],['huelen','verb'],['bien','adv']],
+    [['Mi','otra'],['papá','sust'],['trabaja','verb'],['duro','adv']],
     [['Un','art'],['pez','sust'],['dorado','adj'],['nada','verb']],
     [['La','art'],['pizza','sust'],['caliente','adj'],['está','verb'],['deliciosa','adj']],
     [['El','art'],['reloj','sust'],['marca','verb'],['las','art'],['horas','sust']],
     [['Ana','sust'],['pinta','verb'],['un','art'],['cuadro','sust'],['hermoso','adj']],
-    [['Los','art'],['perros','sust'],['corren','verb'],['juntos','otra']],
-    [['La','art'],['nieve','sust'],['blanca','adj'],['cae','verb'],['despacio','otra']],
+    [['Los','art'],['perros','sust'],['corren','verb'],['juntos','adv']],
+    [['La','art'],['nieve','sust'],['blanca','adj'],['cae','verb'],['despacio','adv']],
     [['El','art'],['bebé','sust'],['duerme','verb'],['tranquilo','adj']],
     [['Una','art'],['araña','sust'],['teje','verb'],['su','otra'],['tela','sust']],
     [['El','art'],['mar','sust'],['es','verb'],['profundo','adj']],
-    [['Mi','otra'],['tía','sust'],['viaja','verb'],['mucho','otra']],
+    [['Mi','otra'],['tía','sust'],['viaja','verb'],['mucho','adv']],
     [['Un','art'],['gato','sust'],['gris','adj'],['maúlla','verb']],
     [['La','art'],['puerta','sust'],['vieja','adj'],['cruje','verb']],
     [['El','art'],['jardín','sust'],['tiene','verb'],['muchas','otra'],['flores','sust']],
     [['Carlos','sust'],['toca','verb'],['la','art'],['guitarra','sust']],
-    [['Las','art'],['estrellas','sust'],['brillan','verb'],['lejos','otra']],
-    [['El','art'],['pan','sust'],['fresco','adj'],['huele','verb'],['bien','otra']],
+    [['Las','art'],['estrellas','sust'],['brillan','verb'],['lejos','adv']],
+    [['El','art'],['pan','sust'],['fresco','adj'],['huele','verb'],['bien','adv']],
     [['Una','art'],['niña','sust'],['feliz','adj'],['salta','verb']],
     [['El','art'],['camino','sust'],['es','verb'],['largo','adj']],
     [['Mi','otra'],['primo','sust'],['estudia','verb'],['medicina','sust']],
     [['Un','art'],['pájaro','sust'],['azul','adj'],['canta','verb']],
     [['La','art'],['sopa','sust'],['está','verb'],['salada','adj']],
-    [['El','art'],['maestro','sust'],['enseña','verb'],['bien','otra']],
+    [['El','art'],['maestro','sust'],['enseña','verb'],['bien','adv']],
     [['Las','art'],['hojas','sust'],['secas','adj'],['caen','verb']],
-    [['Ella','otra'],['compra','verb'],['un','art'],['vestido','sust'],['nuevo','adj']],
-    [['El','art'],['gato','sust'],['negro','adj'],['salta','verb'],['alto','otra']],
+    [['Ella','pron'],['compra','verb'],['un','art'],['vestido','sust'],['nuevo','adj']],
+    [['El','art'],['gato','sust'],['negro','adj'],['salta','verb'],['alto','adv']],
     [['Un','art'],['coche','sust'],['veloz','adj'],['pasa','verb']],
     [['La','art'],['montaña','sust'],['nevada','adj'],['es','verb'],['bella','adj']],
     [['Mi','otra'],['hermano','sust'],['juega','verb'],['fútbol','sust']],
-    [['El','art'],['fuego','sust'],['arde','verb'],['fuerte','adj']],
+    [['El','art'],['fuego','sust'],['arde','verb'],['fuerte','adv']],
     [['Una','art'],['rosa','sust'],['roja','adj'],['crece','verb']],
     [['Los','art'],['niños','sust'],['ríen','verb'],['felices','adj']],
     [['El','art'],['agua','sust'],['clara','adj'],['corre','verb']],
-    [['Sofía','sust'],['baila','verb'],['muy','otra'],['bien','otra']],
-    [['Un','art'],['libro','sust'],['grueso','adj'],['pesa','verb'],['mucho','otra']],
+    [['Sofía','sust'],['baila','verb'],['muy','adv'],['bien','adv']],
+    [['Un','art'],['libro','sust'],['grueso','adj'],['pesa','verb'],['mucho','adv']],
     [['La','art'],['calle','sust'],['está','verb'],['mojada','adj']],
     [['El','art'],['perro','sust'],['fiel','adj'],['espera','verb']],
     [['Mis','otra'],['zapatos','sust'],['están','verb'],['sucios','adj']],
     [['Una','art'],['vela','sust'],['blanca','adj'],['ilumina','verb']],
-    [['El','art'],['río','sust'],['baja','verb'],['rápido','adj']],
-    [['Las','art'],['aves','sust'],['migran','verb'],['lejos','otra']],
+    [['El','art'],['río','sust'],['baja','verb'],['rápido','adv']],
+    [['Las','art'],['aves','sust'],['migran','verb'],['lejos','adv']],
     [['Juan','sust'],['maneja','verb'],['un','art'],['camión','sust'],['viejo','adj']],
     [['El','art'],['cuarto','sust'],['está','verb'],['oscuro','adj']],
     [['Una','art'],['taza','sust'],['caliente','adj'],['humea','verb']],
     [['El','art'],['árbol','sust'],['alto','adj'],['da','verb'],['sombra','sust']],
-    [['Mi','otra'],['gato','sust'],['duerme','verb'],['siempre','otra']],
-    [['Los','art'],['peces','sust'],['nadan','verb'],['juntos','otra']],
+    [['Mi','otra'],['gato','sust'],['duerme','verb'],['siempre','adv']],
+    [['Los','art'],['peces','sust'],['nadan','verb'],['juntos','adv']],
     [['La','art'],['tormenta','sust'],['fuerte','adj'],['llega','verb']],
     [['El','art'],['niño','sust'],['tímido','adj'],['calla','verb']],
     [['Una','art'],['abeja','sust'],['pequeña','adj'],['vuela','verb']],
-    [['El','art'],['queso','sust'],['amarillo','adj'],['huele','verb'],['fuerte','otra']],
+    [['El','art'],['queso','sust'],['amarillo','adj'],['huele','verb'],['fuerte','adv']],
     [['Lucía','sust'],['canta','verb'],['una','art'],['canción','sust']],
     [['Las','art'],['nubes','sust'],['grises','adj'],['cubren','verb'],['el','art'],['cielo','sust']],
     [['El','art'],['reloj','sust'],['antiguo','adj'],['funciona','verb']],
-    [['Un','art'],['ratón','sust'],['gris','adj'],['corre','verb'],['rápido','otra']],
+    [['Un','art'],['ratón','sust'],['gris','adj'],['corre','verb'],['rápido','adv']],
     [['La','art'],['playa','sust'],['está','verb'],['llena','adj']],
     [['Mi','otra'],['mamá','sust'],['lee','verb'],['un','art'],['libro','sust']],
     [['El','art'],['caballo','sust'],['fuerte','adj'],['galopa','verb']],
-    [['Una','art'],['lámpara','sust'],['vieja','adj'],['alumbra','verb'],['poco','otra']],
-    [['Los','art'],['gatos','sust'],['duermen','verb'],['mucho','otra']],
+    [['Una','art'],['lámpara','sust'],['vieja','adj'],['alumbra','verb'],['poco','adv']],
+    [['Los','art'],['gatos','sust'],['duermen','verb'],['mucho','adv']],
     [['El','art'],['viaje','sust'],['fue','verb'],['largo','adj']],
-    [['Ese','otra'],['hombre','sust'],['habla','verb'],['despacio','otra']],
-    [['La','art'],['fruta','sust'],['madura','adj'],['cae','verb']]
+    [['Ese','otra'],['hombre','sust'],['habla','verb'],['despacio','adv']],
+    [['La','art'],['fruta','sust'],['madura','adj'],['cae','verb']],
+    // ===== frases nuevas con foco en preposición, conjunción, adverbio, pronombre =====
+    [['Voy','verb'],['a','prep'],['Caracas','sust']],
+    [['El','art'],['café','sust'],['con','prep'],['leche','sust'],['está','verb'],['caliente','adj']],
+    [['Salgo','verb'],['de','prep'],['la','art'],['casa','sust']],
+    [['El','art'],['regalo','sust'],['es','verb'],['para','prep'],['ti','pron']],
+    [['El','art'],['libro','sust'],['está','verb'],['sobre','prep'],['la','art'],['mesa','sust']],
+    [['Camino','verb'],['hacia','prep'],['el','art'],['parque','sust']],
+    [['Vivo','verb'],['sin','prep'],['miedo','sust']],
+    [['El','art'],['gato','sust'],['está','verb'],['bajo','prep'],['la','art'],['cama','sust']],
+    [['Corro','verb'],['por','prep'],['el','art'],['parque','sust']],
+    [['Pan','sust'],['y','conj'],['queso','sust']],
+    [['Quiero','verb'],['ir','verb'],['pero','conj'],['no','adv'],['puedo','verb']],
+    [['No','adv'],['estudié','verb'],['porque','conj'],['trabajé','verb']],
+    [['Café','sust'],['o','conj'],['té','sust']],
+    [['Estudié','verb'],['y','conj'],['aprobé','verb']],
+    [['Es','verb'],['pequeño','adj'],['pero','conj'],['fuerte','adj']],
+    [['Ni','conj'],['come','verb'],['ni','conj'],['duerme','verb']],
+    [['Ella','pron'],['llegó','verb'],['tarde','adv']],
+    [['Yo','pron'],['tengo','verb'],['hambre','sust']],
+    [['Nosotros','pron'],['ganamos','verb'],['hoy','adv']],
+    [['Esto','pron'],['no','adv'],['sirve','verb']],
+    [['Dámelo','verb'],['ahora','adv']],
+    [['Él','pron'],['corre','verb'],['muy','adv'],['rápido','adv']],
+    [['Trabajo','verb'],['aunque','conj'],['estoy','verb'],['cansado','adj']],
+    [['El','art'],['perro','sust'],['duerme','verb'],['siempre','adv'],['aquí','adv']],
+    [['Vengo','verb'],['de','prep'],['Venezuela','sust']]
   ];
 
   // ===== Bancos con subtipos =====
@@ -1297,7 +1456,97 @@
     {w:['El','cielo','es','azul'],i:2,answer:'verb'},
     {w:['El','cielo','es','azul'],i:3,answer:'adj'}
   ];
-  // Mixto completo: usa PHRASES pero pide tipo + subtipo de cada palabra clasificable.
+  // ===== Bancos de identificación pura (adverbio, pronombre, preposición, conjunción) =====
+  // {w:[palabras], i:índice de la palabra correcta}
+  const ADV_BANK=[
+    {w:['Luis','corre','rápido'],i:2},
+    {w:['Llegó','ayer'],i:1},
+    {w:['El','gato','está','aquí'],i:3},
+    {w:['Comió','mucho'],i:1},
+    {w:['Habla','claro'],i:1},
+    {w:['El','perro','ladra','fuerte'],i:3},
+    {w:['Trabaja','tranquilamente'],i:1},
+    {w:['Ella','llegó','tarde'],i:2},
+    {w:['Camina','despacio'],i:1},
+    {w:['El','sol','brilla','hoy'],i:3},
+    {w:['Corre','muy','rápido'],i:1},
+    {w:['Siempre','estudia'],i:0},
+    {w:['Nunca','miente'],i:0},
+    {w:['Las','aves','vuelan','lejos'],i:3},
+    {w:['Come','bien'],i:1},
+    {w:['El','niño','juega','afuera'],i:3},
+    {w:['Resolvió','fácilmente','el','examen'],i:1},
+    {w:['Está','muy','cansado'],i:1},
+    {w:['Volvió','pronto'],i:1},
+    {w:['El','tren','llegó','tarde'],i:3}
+  ];
+  const PRON_BANK=[
+    {w:['Ella','llegó','tarde'],i:0},
+    {w:['Yo','tengo','hambre'],i:0},
+    {w:['Nosotros','ganamos','hoy'],i:0},
+    {w:['Esto','no','sirve'],i:0},
+    {w:['Él','corre','rápido'],i:0},
+    {w:['Ellos','estudian','juntos'],i:0},
+    {w:['Tú','sabes','la','verdad'],i:0},
+    {w:['Eso','es','mío'],i:0},
+    {w:['Ella','canta','bonito'],i:0},
+    {w:['Nosotros','viajamos','mañana'],i:0},
+    {w:['Aquello','parece','viejo'],i:0},
+    {w:['Yo','estudio','todos','los','días'],i:0},
+    {w:['Él','trabaja','mucho'],i:0},
+    {w:['Ellas','llegaron','temprano'],i:0},
+    {w:['Esto','me','gusta'],i:0},
+    {w:['Tú','ganaste'],i:0},
+    {w:['Ella','vive','sola'],i:0},
+    {w:['Nosotros','somos','amigos'],i:0},
+    {w:['Eso','no','importa'],i:0},
+    {w:['Él','llegó','primero'],i:0}
+  ];
+  const PREP_BANK=[
+    {w:['Voy','a','Caracas'],i:1},
+    {w:['Café','con','leche'],i:1},
+    {w:['Salgo','de','la','casa'],i:1},
+    {w:['Regalo','para','ti'],i:1},
+    {w:['El','libro','sobre','la','mesa'],i:2},
+    {w:['Camino','hacia','el','parque'],i:1},
+    {w:['Vivo','sin','miedo'],i:1},
+    {w:['El','gato','bajo','la','cama'],i:2},
+    {w:['Corro','por','el','parque'],i:1},
+    {w:['Viene','desde','lejos'],i:1},
+    {w:['Estudio','hasta','tarde'],i:1},
+    {w:['La','carta','es','para','Ana'],i:3},
+    {w:['Hablo','con','ella'],i:1},
+    {w:['El','perro','está','en','casa'],i:3},
+    {w:['Vengo','de','Venezuela'],i:1},
+    {w:['Lucho','contra','el','miedo'],i:1},
+    {w:['Está','entre','dos','sillas'],i:1},
+    {w:['Llegó','ante','el','juez'],i:1},
+    {w:['Corre','tras','el','balón'],i:1},
+    {w:['Según','Luis','está','bien'],i:0}
+  ];
+  const CONJ_BANK=[
+    {w:['Pan','y','queso'],i:1},
+    {w:['Café','o','té'],i:1},
+    {w:['Quiero','ir','pero','no','puedo'],i:2},
+    {w:['No','estudié','porque','trabajé'],i:2},
+    {w:['Estudié','y','aprobé'],i:1},
+    {w:['Es','pequeño','pero','fuerte'],i:2},
+    {w:['Trabajo','aunque','estoy','cansado'],i:1},
+    {w:['Corre','y','salta'],i:1},
+    {w:['Llueve','pero','salgo'],i:1},
+    {w:['Come','o','duerme'],i:1},
+    {w:['Vino','porque','quería'],i:1},
+    {w:['Sabe','pero','calla'],i:1},
+    {w:['Canta','y','baila'],i:1},
+    {w:['Lo','hago','aunque','cueste'],i:2},
+    {w:['Rápido','o','lento'],i:1},
+    {w:['Estudia','y','trabaja'],i:1},
+    {w:['No','fui','porque','llovía'],i:2},
+    {w:['Es','feo','pero','útil'],i:2},
+    {w:['Ríe','y','llora'],i:1},
+    {w:['Quiero','pan','y','agua'],i:2}
+  ];
+
   // Para eso necesito subtipos en PHRASES; los infiero con un mapa de palabras conocidas.
   const SUB_MAP={
     // artículos
@@ -1309,15 +1558,20 @@
   const selGames=new Set(['mixbasic']);   // juegos elegidos (multi para tipos; mixbasic exclusivo)
   let countL=10;
   const GAME_DESC={
-    mixbasic:'Clasificá cada palabra por su tipo: sustantivo, adjetivo, artículo, verbo u otra.',
+    mixbasic:'Clasificá cada palabra por su tipo: artículo, sustantivo, adjetivo, verbo, adverbio, pronombre, preposición, conjunción u otra.',
     art:'Una frase con un artículo. Elegís cuál es, y decís si es definido/indefinido y su concordancia.',
     sust:'Un sustantivo. Elegís cuál es, y decís si es común/propio y concreto/abstracto.',
     adj:'Palabra marcada: ¿es adjetivo o verbo? Usá la prueba del tiempo.',
-    verb:'Un verbo. Elegís cuál es, y decís si es acción/estado e infinitivo/conjugado.'
+    verb:'Un verbo. Elegís cuál es, y decís si es acción/estado e infinitivo/conjugado.',
+    adv:'Tocá cuál palabra es el adverbio (modifica al verbo: cómo, cuándo, dónde, cuánto).',
+    pron:'Tocá cuál palabra es el pronombre (reemplaza a un nombre: yo, él, esto…).',
+    prep:'Tocá cuál palabra es la preposición (arrastra un nombre detrás: a, de, con, para…).',
+    conj:'Tocá cuál palabra es la conjunción (une dos cosas del mismo nivel: y, o, pero, porque…).'
   };
+  const IDENT_GAMES=['adv','pron','prep','conj'];  // juegos de identificación pura (sin subtipos)
   function renderGameDesc(){
     if(selGames.has('mixbasic')){ $('#gameDesc').textContent=GAME_DESC.mixbasic; return; }
-    const names={art:'Artículos',sust:'Sustantivos',adj:'Adjetivos',verb:'Verbos'};
+    const names={art:'Artículos',sust:'Sustantivos',adj:'Adjetivos',verb:'Verbos',adv:'Adverbios',pron:'Pronombres',prep:'Preposiciones',conj:'Conjunciones'};
     const sel=[...selGames].map(g=>names[g]);
     $('#gameDesc').textContent = sel.length===1 ? GAME_DESC[[...selGames][0]] : `Mezcla: ${sel.join(', ')}. Cada ejercicio es de uno de estos tipos.`;
   }
@@ -1349,7 +1603,7 @@
   let pickState={};
   let placement={},selectedWord=null;
 
-  const BANK_OF={art:()=>ART_BANK,sust:()=>SUST_BANK,verb:()=>VERB_BANK,adj:()=>ADJV_BANK};
+  const BANK_OF={art:()=>ART_BANK,sust:()=>SUST_BANK,verb:()=>VERB_BANK,adj:()=>ADJV_BANK,adv:()=>ADV_BANK,pron:()=>PRON_BANK,prep:()=>PREP_BANK,conj:()=>CONJ_BANK};
 
   function startLang(){
     lIdx=0;lLog=[];lCorrect=0;lTotal=0;
@@ -1400,7 +1654,7 @@
       const el=document.createElement('div');el.className='word';el.textContent=w[0];el.dataset.i=i;el.setAttribute('draggable','true');
       wc.appendChild(el);
     });
-    const order=['art','sust','adj','verb','otra'];
+    const order=['art','sust','adj','verb','adv','pron','prep','conj','otra'];
     const rows=$('#rows');rows.innerHTML='<div class="boxes" id="boxes"></div>';
     const bc=$('#boxes');
     order.forEach(t=>{
@@ -1440,7 +1694,7 @@
     }
     return [];
   }
-  const GAME_WORDNAME={art:'el artículo',sust:'el sustantivo',adj:null,verb:'el verbo'};
+  const GAME_WORDNAME={art:'el artículo',sust:'el sustantivo',adj:null,verb:'el verbo',adv:'el adverbio',pron:'el pronombre',prep:'la preposición',conj:'la conjunción'};
   let wordChosen=false;  // si ya se eligió correctamente la palabra
   function showPicks(){
     const it=lItems[lIdx].it;
@@ -1457,6 +1711,10 @@
       markTargetWord();
       $('#phraseHint').textContent='¿La palabra marcada es adjetivo o verbo?';
       renderPickRows();
+    }else if(IDENT_GAMES.includes(langGame)){
+      // identificación pura: solo tocar la palabra correcta, sin subtipos
+      $('#phraseHint').textContent=`Tocá cuál es ${GAME_WORDNAME[langGame]} en la frase.`;
+      $('#checkL').textContent='Revisar';
     }else{
       $('#phraseHint').textContent=`Tocá cuál es ${GAME_WORDNAME[langGame]} en la frase.`;
       $('#checkL').textContent='Revisar';
@@ -1508,6 +1766,13 @@
     }
     // juegos art/sust/verb: fase de elegir la palabra
     if(langGame==='adj')return;          // adj no elige palabra
+    if(IDENT_GAMES.includes(langGame)){
+      // identificación pura: seleccionar palabra (una sola), evalúa en Revisar
+      document.querySelectorAll('#words .word').forEach(x=>x.classList.remove('sel'));
+      w.classList.add('sel');
+      pickState.chosen=parseInt(w.dataset.i,10);
+      return;
+    }
     if(wordChosen)return;                 // ya se eligió, no cambiar
     const idx=parseInt(w.dataset.i,10);
     const it=lItems[lIdx].it;
@@ -1535,6 +1800,25 @@
       verb:'El <b>verbo</b> es la acción o el estado. Prueba: es lo único que cambia de tiempo (ayer/hoy/mañana).'
     };
     return help[langGame]||'';
+  }
+  function identHelp(){
+    const help={
+      adv:'El <b>adverbio</b> se pega a un verbo y responde cómo/cuándo/dónde/cuánto. Truco: casi todo lo que termina en -mente es adverbio, y no cambia de género (siempre "rápido").',
+      pron:'El <b>pronombre</b> reemplaza a un nombre. Truco: si podés cambiarlo por el nombre de una persona o cosa, es pronombre (él → María).',
+      prep:'La <b>preposición</b> arrastra un nombre detrás. Truco: no puede ir sola, siempre pide algo después (con leche, a Caracas). Lista: a, ante, bajo, con, de, desde, en, entre, hacia, hasta, para, por, según, sin, sobre, tras.',
+      conj:'La <b>conjunción</b> une dos cosas del mismo nivel. Truco: tapala y mirá los dos lados; si ambos funcionan solos, es conjunción (y, o, pero, porque, aunque, ni, sino).'
+    };
+    return help[langGame]||'';
+  }
+  function identExplain(it){
+    const word=it.w[it.i];
+    const why={
+      adv:`El adverbio es <b>"${word}"</b>: modifica al verbo (cómo/cuándo/dónde/cuánto) y no cambia de género.`,
+      pron:`El pronombre es <b>"${word}"</b>: reemplaza a un nombre. Podés cambiarlo por el nombre de una persona o cosa.`,
+      prep:`La preposición es <b>"${word}"</b>: arrastra un nombre detrás y no puede ir sola.`,
+      conj:`La conjunción es <b>"${word}"</b>: une dos cosas del mismo nivel (palabras o frases que se sostienen solas).`
+    };
+    return why[langGame]||`Era "${word}".`;
   }
   function renderPlacements(){
     document.querySelectorAll('#boxes .drop').forEach(d=>d.innerHTML='');
@@ -1588,6 +1872,28 @@
   }
 
   function checkPicks(){
+    // juegos de identificación pura: solo comparar palabra elegida
+    if(IDENT_GAMES.includes(langGame)){
+      const it=lItems[lIdx].it;
+      if(pickState.chosen==null){
+        $('#exHeadL').textContent='Elegí la palabra';
+        $('#exBodyL').innerHTML=`Tocá cuál es ${GAME_WORDNAME[langGame]} en la frase. ${identHelp()}`;
+        $('#explainL').classList.remove('hidden');$('#checkL').classList.add('hidden');lEvaluated=false;return;
+      }
+      const took=(performance.now()-lQStart)/1000;
+      const ok=pickState.chosen===it.i;
+      record(typeToCat[langGame],ok);
+      // marcar visualmente
+      document.querySelectorAll('#words .word').forEach(x=>{
+        const xi=parseInt(x.dataset.i,10);
+        if(xi===it.i)x.classList.add(ok?'ok':'should');
+        if(xi===pickState.chosen&&!ok)x.classList.add('err');
+      });
+      lTotal+=1;lCorrect+=ok?1:0;
+      lLog.push({label:it.w.join(' '),correct:ok?1:0,total:1,allOk:ok,took});
+      finishItem(ok, ok?[]:[identExplain(it)]);
+      return;
+    }
     // en art/sust/verb hay que haber elegido la palabra primero
     if(langGame!=='adj' && !wordChosen){
       $('#exHeadL').textContent='Elegí la palabra';
@@ -1639,7 +1945,7 @@
     return reasons[r.key]||`Era ${val(r.correct)}.`;
   }
   function whyType(type){
-    return ({sust:'Es el nombre de una cosa, persona o idea.',adj:'Dice cómo es algo.',art:'Va antes del sustantivo (el, la, un, una).',verb:'Es acción o estado.',otra:'Es adverbio, pronombre, preposición o posesivo.'})[type]||'';
+    return ({sust:'Es el nombre de una cosa, persona o idea.',adj:'Dice cómo es algo.',art:'Va antes del sustantivo (el, la, un, una).',verb:'Es acción o estado.',adv:'Modifica al verbo: cómo/cuándo/dónde/cuánto (no cambia de género).',pron:'Reemplaza a un nombre (yo, él, esto, lo).',prep:'Arrastra un nombre detrás (a, de, con, para).',conj:'Une dos cosas del mismo nivel (y, o, pero, porque).',otra:'Es un posesivo o demostrativo que acompaña (mi, su, esta, ese).'})[type]||'';
   }
 
   function finishItem(allOk,errLines){
@@ -1680,8 +1986,225 @@
   $('#againL').onclick=()=>only('setupLang');
 
 
+  // ================= MODO FRACCIONES =================
+  const selFrac=new Set(['fsame']);
+  let countF=10;
+  const FRAC_DESC={
+    fsame:'Suma y resta con el mismo denominador. Sumás/restás numeradores y dejás el denominador igual. Simplificá el resultado.',
+    fdiff:'Suma y resta con distinto denominador. Buscás denominador común, ajustás numeradores y operás. Simplificá.',
+    fmix:'Números mixtos (entero + fracción). Convertís a fracción impropia, operás y simplificás. Podés responder como fracción impropia.'
+  };
+  function renderFracDesc(){
+    if(selFrac.size===1){ $('#fracDesc').textContent=FRAC_DESC[[...selFrac][0]]; }
+    else { $('#fracDesc').textContent='Mezcla de los formatos elegidos.'; }
+  }
+  $('#opsFrac').addEventListener('click',e=>{
+    const el=e.target.closest('.op');if(!el)return;
+    const op=el.dataset.op;
+    if(selFrac.has(op)){if(selFrac.size>1)selFrac.delete(op);}else selFrac.add(op);
+    document.querySelectorAll('#opsFrac .op').forEach(x=>x.classList.toggle('on',selFrac.has(x.dataset.op)));
+    $('#startBtnF').disabled=selFrac.size===0;
+    renderFracDesc();
+  });
+  const countFInput=$('#countF');
+  $('#minusF').onclick=()=>{countF=clamp(countF-1);countFInput.value=countF};
+  $('#plusF').onclick =()=>{countF=clamp(countF+1);countFInput.value=countF};
+  countFInput.oninput=()=>{countF=clamp(parseInt(countFInput.value,10))};
+  countFInput.onblur =()=>{countFInput.value=countF};
+  document.querySelectorAll('#setupFrac .quick button').forEach(b=>b.onclick=()=>{countF=clamp(parseInt(b.dataset.nf,10));countFInput.value=countF});
+
+  // ---------- utilidades de fracción ----------
+  function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b];}return a||1;}
+  function reduceFrac(n,d){
+    if(d<0){n=-n;d=-d;}          // el signo siempre arriba
+    const g=gcd(n,d);
+    return [n/g, d/g];
+  }
+  // texto visual de una fracción para el enunciado (numerador sobre denominador)
+  function fracHTML(n,d){return `<span class="fracq"><span class="fn">${n}</span><span class="fd">${d}</span></span>`;}
+  function mixedHTML(w,n,d){return `<span class="whole">${w}</span>${fracHTML(n,d)}`;}
+
+  // ---------- generadores de fracciones ----------
+  function makeFracSame(){
+    const d=rnd(2,12);
+    let a=rnd(1,d-1), b=rnd(1,d-1);
+    const plus=Math.random()<0.5;
+    if(!plus && b>a)[a,b]=[b,a];    // evitar resultado negativo en resta
+    const rn = plus ? a+b : a-b;
+    const [sn,sd]=reduceFrac(rn,d);
+    return {op:'fsame',cat:'fsame1',plus,a,b,d,
+      text:`${fracHTML(a,d)} ${plus?'+':'−'} ${fracHTML(b,d)}`,
+      ansN:sn,ansD:sd, raw:{n:rn,d}};
+  }
+  function makeFracDiff(){
+    let d1=rnd(2,9), d2=rnd(2,9);
+    while(d2===d1) d2=rnd(2,9);
+    const a=rnd(1,d1-1), b=rnd(1,d2-1);
+    const plus=Math.random()<0.5;
+    const com=d1*d2/gcd(d1,d2);      // mcm
+    const na=a*(com/d1), nb=b*(com/d2);
+    let rn = plus ? na+nb : na-nb;
+    // evitar negativo en resta: si sale negativo, cambio a suma
+    let realPlus=plus;
+    if(!plus && rn<0){ realPlus=true; rn=na+nb; }
+    const [sn,sd]=reduceFrac(rn,com);
+    return {op:'fdiff',cat:'fdiff1',plus:realPlus,a,b,d1,d2,com,na,nb,
+      text:`${fracHTML(a,d1)} ${realPlus?'+':'−'} ${fracHTML(b,d2)}`,
+      ansN:sn,ansD:sd, raw:{n:rn,d:com}};
+  }
+  function makeFracMix(){
+    // dos mixtos con denominadores iguales o distintos chicos
+    const w1=rnd(1,4), w2=rnd(1,4);
+    let d1=rnd(2,6), d2=rnd(2,6);
+    const a=rnd(1,d1-1), b=rnd(1,d2-1);
+    const plus=Math.random()<0.5;
+    // a impropia
+    const imp1n=w1*d1+a, imp2n=w2*d2+b;
+    const com=d1*d2/gcd(d1,d2);
+    const na=imp1n*(com/d1), nb=imp2n*(com/d2);
+    let realPlus=plus, rn = plus ? na+nb : na-nb;
+    if(!plus && rn<0){ realPlus=true; rn=na+nb; }
+    const [sn,sd]=reduceFrac(rn,com);
+    return {op:'fmix',cat:'fmix1',plus:realPlus,w1,a,d1,w2,b,d2,com,imp1n,imp2n,
+      text:`${mixedHTML(w1,a,d1)} ${realPlus?'+':'−'} ${mixedHTML(w2,b,d2)}`,
+      ansN:sn,ansD:sd, raw:{n:rn,d:com}};
+  }
+  function makeProblemFrac(){
+    const op=pick([...selFrac]);
+    if(op==='fsame')return makeFracSame();
+    if(op==='fdiff')return makeFracDiff();
+    return makeFracMix();
+  }
+
+  // ---------- explicaciones de fracciones ----------
+  function explainFrac(p){
+    const finalTxt = p.ansD===1 ? `${p.ansN}` : `${p.ansN}/${p.ansD}`;
+    if(p.op==='fsame'){
+      const rn = p.plus ? p.a+p.b : p.a-p.b;
+      let s=`Mismo denominador (${p.d}): ${p.plus?'sumás':'restás'} los numeradores y dejás el ${p.d} abajo. ${p.a} ${p.plus?'+':'−'} ${p.b} = ${rn}, o sea ${rn}/${p.d}. `;
+      if(p.ansD!==p.d || p.ansN!==rn) s+=`Simplificás → <b>${finalTxt}</b>.`;
+      else s+=`→ <b>${finalTxt}</b>.`;
+      return s;
+    }
+    if(p.op==='fdiff'){
+      let s=`Denominador común de ${p.d1} y ${p.d2} = ${p.com}. Reescribís: ${p.a}/${p.d1} = ${p.na}/${p.com} y ${p.b}/${p.d2} = ${p.nb}/${p.com}. `;
+      const rn = p.plus ? p.na+p.nb : p.na-p.nb;
+      s+=`Ahora mismo denominador: ${p.na} ${p.plus?'+':'−'} ${p.nb} = ${rn} → ${rn}/${p.com}. `;
+      s+=`Simplificás → <b>${finalTxt}</b>.`;
+      return s;
+    }
+    // mixto
+    let s=`Convertís a impropias: ${p.w1} y ${p.a}/${p.d1} → (${p.w1}×${p.d1}+${p.a})/${p.d1} = ${p.imp1n}/${p.d1}; ${p.w2} y ${p.b}/${p.d2} → ${p.imp2n}/${p.d2}. `;
+    s+=`Común ${p.com}, operás los numeradores y simplificás → <b>${finalTxt}</b>.`;
+    return s;
+  }
+
+  // ================= MOTOR FRACCIONES =================
+  let fProbs=[],fIdx=0,fLog=[],fStart=0,fQStart=0,fTick=null,fActive='num';
+  function startFrac(){
+    fProbs=[];for(let i=0;i<countF;i++)fProbs.push(makeProblemFrac());
+    fIdx=0;fLog=[];
+    only('playFrac');
+    fStart=performance.now();
+    clearInterval(fTick);
+    fTick=setInterval(()=>{$('#clockF').textContent=((performance.now()-fStart)/1000).toFixed(1)+'s'},100);
+    showFrac();
+  }
+  function showFrac(){
+    const p=fProbs[fIdx];
+    $('#qTextF').innerHTML=p.text;$('#qTextF').className='q';
+    $('#progF').textContent=`${fIdx+1} / ${fProbs.length}`;
+    $('#barFillF').style.width=(fIdx/fProbs.length*100)+'%';
+    $('#fNum').value='';$('#fDen').value='';
+    setFracActive('num');
+    $('#explainF').classList.add('hidden');
+    $('#padF').style.display='';
+    updateLiveF();
+    fQStart=performance.now();
+  }
+  function setFracActive(which){
+    fActive=which;
+    $('#fNum').classList.toggle('active',which==='num');
+    $('#fDen').classList.toggle('active',which==='den');
+  }
+  $('#fNum').addEventListener('click',()=>setFracActive('num'));
+  $('#fDen').addEventListener('click',()=>setFracActive('den'));
+  function updateLiveF(){
+    const cat=fProbs[fIdx].cat;
+    $('#liveF').innerHTML=`racha <b>${DATA.streak[cat]}</b> · ${DATA.total[cat]}/100`;
+  }
+  function fracPadPress(k){
+    const el = fActive==='num' ? $('#fNum') : $('#fDen');
+    if(k==='del'){ el.value=el.value.slice(0,-1); return; }
+    if(k==='sign'){
+      if(fActive!=='num') return;          // el signo va arriba (numerador)
+      el.value = el.value.startsWith('-') ? el.value.slice(1) : '-'+el.value; return;
+    }
+    if(k==='go'){ submitFrac(); return; }
+    el.value += k;
+  }
+  $('#padF').addEventListener('click',e=>{
+    const b=e.target.closest('button');if(!b)return;
+    fracPadPress(b.dataset.k);
+  });
+  function submitFrac(){
+    const p=fProbs[fIdx];
+    const numStr=$('#fNum').value, denStr=$('#fDen').value;
+    if(numStr===''||numStr==='-'){ $('#fNum').classList.add('bad');setTimeout(()=>$('#fNum').classList.remove('bad'),300);setFracActive('num');return; }
+    if(denStr===''||denStr==='-'||denStr==='0'){ $('#fDen').classList.add('bad');setTimeout(()=>$('#fDen').classList.remove('bad'),300);setFracActive('den');return; }
+    const un=parseInt(numStr,10), ud=parseInt(denStr,10);
+    // validación por equivalencia de fracción (reduzco lo que metió y comparo con la respuesta reducida)
+    const [rn,rd]=reduceFrac(un,ud);
+    const ok = (rn===p.ansN && rd===p.ansD);
+    const took=(performance.now()-fQStart)/1000;
+    record(p.cat,ok);
+    const ansTxt = p.ansD===1?`${p.ansN}`:`${p.ansN}/${p.ansD}`;
+    fLog.push({text:p.text,your:`${un}/${ud}`,ans:ansTxt,ok,took});
+    updateLiveF();
+    if(ok){
+      $('#qTextF').classList.add('flash-ok');
+      setTimeout(()=>{fIdx++;fIdx>=fProbs.length?finishFrac():showFrac();},400);
+    }else{
+      $('#exAnsF').textContent=ansTxt;
+      $('#exBodyF').innerHTML=explainFrac(p);
+      $('#explainF').classList.remove('hidden');
+      $('#padF').style.display='none';
+    }
+  }
+  $('#exContF').onclick=()=>{
+    $('#explainF').classList.add('hidden');$('#padF').style.display='';
+    fIdx++;fIdx>=fProbs.length?finishFrac():showFrac();
+  };
+  $('#quitF').onclick=()=>{clearInterval(fTick);only('setupFrac');};
+  function finishFrac(){
+    clearInterval(fTick);
+    $('#barFillF').style.width='100%';
+    // reusar la pantalla de resultados de mate
+    const correct=fLog.filter(x=>x.ok).length;
+    const total=fLog.length;
+    const times=fLog.map(x=>x.took);
+    const totalTime=(performance.now()-fStart)/1000;
+    $('#rCorrect').textContent=correct;
+    $('#rTotal').textContent=total;
+    $('#rSub').textContent=correct===total?'perfecto':`${total-correct} falladas`;
+    $('#rTime').textContent=fmt(totalTime);
+    $('#rAvg').textContent=fmt(times.reduce((a,b)=>a+b,0)/(times.length||1));
+    $('#rFast').textContent=fmt(Math.min(...times));
+    $('#rSlow').textContent=fmt(Math.max(...times));
+    const rev=$('#review');rev.innerHTML='';
+    fLog.forEach(x=>{
+      const d=document.createElement('div');d.className='rev'+(x.ok?'':' miss');
+      const q=x.text.replace(/<[^>]+>/g,m=>m); // el texto ya trae HTML de fracción; lo dejo
+      d.innerHTML=`<span class="exp">${x.text}</span>`+(x.ok?`<span class="tick">✓ ${x.ans}</span>`:`<span><span class="yours">${x.your}</span> → <b>${x.ans}</b></span>`);
+      rev.appendChild(d);
+    });
+    // marca que "Otra ronda" vuelva a fracciones
+    lastMathMode='frac';
+    only('results');
+  }
+
   // ================= JUEGO =================
-  let probs=[],idx=0,log=[],tStart=0,qStart=0,tickTimer=null,mode='mental',allowNeg=false;
+  let probs=[],idx=0,log=[],tStart=0,qStart=0,tickTimer=null,mode='mental',allowNeg=false,lastMathMode='mental';
   function startGame(m){
     mode=m;
     allowNeg = (m==='neg') || (m==='mental' && selected.has('howq'));
@@ -1873,6 +2396,14 @@
     {t:'Valor absoluto | |',b:'Convierte lo de adentro en positivo. Primero resolvés todo lo que está dentro de las barras, luego se vuelve positivo, y después aplicás lo de afuera. <span class="ex">|−7| = 7</span> · <span class="ex">|−8+4| = |−4| = 4</span> · <span class="ex">−|−4| = −4</span>'},
     {t:'Jerarquía de operaciones',b:'Se resuelve en este orden:<br>1. Paréntesis ( ) y valor absoluto | |<br>2. Potencias y raíces (3², √)<br>3. Multiplicación y división (× ÷)<br>4. Sumas y restas (+ −)<br><span class="ex">−3 + 4 × (−2) = −3 + (−8) = −11</span>'}
   ];
+  const FORMULAS_FRAC=[
+    {t:'Partes de una fracción',b:'Arriba el <b>numerador</b> (cuántas partes tomás), abajo el <b>denominador</b> (en cuántas partes está dividido el entero). <span class="ex">3/4 = 3 partes de 4</span>'},
+    {t:'Suma/resta con mismo denominador',b:'Sumás o restás los numeradores y dejás el mismo denominador. <span class="ex">2/7 + 3/7 = 5/7</span> · <span class="ex">5/8 − 1/8 = 4/8 = 1/2</span>. Siempre simplificá al final.'},
+    {t:'Suma/resta con distinto denominador',b:'Buscás un denominador común (el mcm sirve, o multiplicar los dos denominadores). Reescribís cada fracción con ese denominador y ahí sí sumás/restás numeradores. <span class="ex">1/2 + 1/3 → común 6 → 3/6 + 2/6 = 5/6</span>'},
+    {t:'Denominador común rápido',b:'Si no ves el mcm, multiplicá cruzado: a/b ± c/d = (a·d ± c·b) / (b·d). Da común seguro, aunque a veces haya que simplificar más al final. <span class="ex">1/4 + 1/6 = (6+4)/24 = 10/24 = 5/12</span>'},
+    {t:'Números mixtos',b:'Un mixto (1½) es entero + fracción. Para operar convertís a fracción impropia: entero × denominador + numerador, sobre el mismo denominador. <span class="ex">1½ = (1×2+1)/2 = 3/2</span>. Después operás normal.'},
+    {t:'Simplificar',b:'Dividís numerador y denominador por el mismo número hasta que no tengan factor común. <span class="ex">6/8 → ÷2 → 3/4</span>. El resultado final siempre va simplificado.'}
+  ];
   const FORMULAS_LANG=[
     {t:'Artículo — qué es',b:'Va antes del sustantivo para presentarlo. No tiene significado propio, solo acompaña. <span class="ex">el, la, un, una</span>'},
     {t:'Artículo — definido / indefinido',b:'<b>Definido</b> (el, la, los, las) = algo específico, ya sabés cuál. <b>Indefinido</b> (un, una, unos, unas) = uno cualquiera. <span class="ex">el perro = ese perro / un perro = cualquiera</span>'},
@@ -1884,17 +2415,27 @@
     {t:'Adjetivo vs Verbo (tu error repetido)',b:'Prueba del tiempo. En "la montaña es enorme": <b>es</b> → cambia de tiempo (era, será) = verbo. <b>enorme</b> → no existe "enormará" = adjetivo. El adjetivo describe y se pega al sustantivo; el verbo cambia con el tiempo.'},
     {t:'Verbo — qué es',b:'La acción o el estado de algo. Prueba: es lo único que cambia de tiempo. <span class="ex">es → era → será ✓</span>'},
     {t:'Verbo — infinitivo / conjugado',b:'<b>Infinitivo</b> = la acción sola, sin dueño (saltar, correr, comer). <b>Conjugado</b> = alguien lo hace (yo salto, él corre). Prueba: ponele "yo" adelante. "yo saltar" ✗ = infinitivo; "yo salto" ✓ = conjugado.'},
+    {t:'Adverbio — qué es',b:'Palabra que modifica a un <b>verbo</b> (una acción). También puede pegarse a un adjetivo u otro adverbio, pero es lo menos común. Rule of thumb: mirá a qué está pegado. Pegado a un sustantivo → adjetivo. Pegado a un verbo → adverbio. <span class="ex">Habla claro (verbo) → adverbio · Un mensaje claro (cosa) → adjetivo</span>'},
+    {t:'Adverbio — pruebas',b:'¿La palabra cambia si hablo de hombre/mujer, uno/varios? Si cambia (rápido/rápida) → adjetivo. Si queda congelada (siempre "rápido") → adverbio. Truco extra: casi toda palabra terminada en <b>-mente</b> es adverbio (rápidamente, fácilmente) — acierta el 95%. Preguntas que responde: ¿cómo? corre rápido · ¿cuándo? llegó ayer · ¿dónde? está aquí · ¿cuánto? comió mucho.'},
+    {t:'Pronombre — qué es',b:'Un comodín que reemplaza a un nombre para no repetirlo. En vez de decir "María" otra vez, decís "ella". Rule of thumb: si podés cambiar la palabra por el nombre de una cosa o persona, es pronombre. <span class="ex">Ella llegó → María llegó ✓ · Esto no sirve → el teléfono no sirve ✓</span>'},
+    {t:'Pronombre — grupos y trampa',b:'Personales: yo, tú, él, ella, nosotros, me, te, lo, la, le, se. Demostrativos: esto, eso, aquello, este, ese. Posesivos: mío, tuyo, suyo, nuestro. Diferencia con el artículo: <b>El</b> carro → acompaña al nombre = artículo. <b>Él</b> llegó → está solo, reemplaza a la persona = pronombre. Regla: si acompaña a un nombre no es pronombre; si está solo ocupando el lugar del nombre, sí.'},
+    {t:'Preposición — qué es',b:'Un pegamento chiquito que conecta palabras y dice una relación (lugar, tiempo, posesión). Siempre va antes de un nombre y lo arrastra detrás. Lista fija: <b>a, ante, bajo, con, contra, de, desde, en, entre, hacia, hasta, para, por, según, sin, sobre, tras</b>. Las más comunes: a, de, en, con, por, para, sin, sobre, entre, hasta, desde.'},
+    {t:'Preposición — el truco',b:'Nunca va sola, siempre arrastra algo detrás. No podés decir "café con" y parar — el "con" te pide una palabra después (con leche). Si la palabrita necesita sí o sí algo detrás para tener sentido, es preposición. <span class="ex">Café con leche · Voy a Caracas · Regalo para ti · Salgo de la casa</span>'},
+    {t:'Conjunción — qué es',b:'Une dos cosas del mismo nivel — dos palabras o dos frases enteras que podrían vivir solas. Lista cortica: <b>y, e, o, u, ni, pero, sino, aunque, porque, pues, que, si, como</b>. Las más comunes: y, o, pero, porque, aunque, ni, sino. <span class="ex">Pan y queso · Quiero ir pero no puedo · No estudié porque trabajé</span>'},
+    {t:'Preposición vs Conjunción',b:'Fijate en lo que viene después. ¿Un solo nombre? → preposición ("con leche", leche solita no es frase). ¿Dos ideas o palabras al mismo nivel? → conjunción ("estudié y trabajé", las dos partes se sostienen solas). Prueba: tapá la palabrita y mirá los dos lados. Si de ambos lados hay algo que funciona solo → conjunción. Si de un lado queda un nombre colgando → preposición.'},
     {t:'Todo junto',b:'<span class="ex">El perro es grande</span> → El = artículo definido masc. sing. · perro = sustantivo común concreto · es = verbo estado conjugado · grande = adjetivo'}
   ];
   function renderFormulas(){
     $('#fMental').innerHTML=FORMULAS_MENTAL.map(f=>`<div class="formula"><div class="ft">${f.t}</div><div class="fb">${f.b}</div></div>`).join('');
     $('#fNeg').innerHTML=FORMULAS_NEG.map(f=>`<div class="formula"><div class="ft">${f.t}</div><div class="fb">${f.b}</div></div>`).join('');
+    $('#fFrac').innerHTML=FORMULAS_FRAC.map(f=>`<div class="formula"><div class="ft">${f.t}</div><div class="fb">${f.b}</div></div>`).join('');
     $('#fLang').innerHTML=FORMULAS_LANG.map(f=>`<div class="formula"><div class="ft">${f.t}</div><div class="fb">${f.b}</div></div>`).join('');
     // visibilidad según contexto
     const showMath = subject!=='lang';
     const showLang = subject!=='math';
     $('#fBlockMental').classList.toggle('hidden',!showMath);
     $('#fBlockNeg').classList.toggle('hidden',!showMath);
+    $('#fBlockFrac').classList.toggle('hidden',!showMath);
     $('#fBlockLang').classList.toggle('hidden',!showLang);
   }
 
@@ -1926,22 +2467,28 @@
   // elegir modo (mate) desde home
   document.querySelectorAll('.modebtn[data-mode]').forEach(b=>b.onclick=()=>{
     const m=b.dataset.mode;
-    only(m==='neg'?'setupNeg':'setup');
+    only(m==='neg'?'setupNeg':m==='frac'?'setupFrac':'setup');
   });
   // volver atrás
   $('#backMental').onclick=()=>only('home');
   $('#backNeg').onclick=()=>only('home');
+  $('#backFrac').onclick=()=>only('home');
   $('#backRootFromHome').onclick=()=>{subject='root';only('root')};
   $('#backRootFromLang').onclick=()=>{subject='root';only('root')};
 
   $('#reset').onclick=()=>{if(confirm('¿Borrar TODO el progreso? Rachas, totales y días. No se puede deshacer.')){DATA=blankData();save();renderDash();}};
-  $('#startBtn').onclick=()=>startGame('mental');
-  $('#startBtnN').onclick=()=>startGame('neg');
-  $('#again').onclick=()=>{only(mode==='neg'?'setupNeg':'setup');};
+  $('#startBtn').onclick=()=>{lastMathMode='mental';startGame('mental');};
+  $('#startBtnN').onclick=()=>{lastMathMode='neg';startGame('neg');};
+  $('#startBtnF').onclick=()=>{lastMathMode='frac';startFrac();};
+  $('#again').onclick=()=>{
+    if(lastMathMode==='frac')only('setupFrac');
+    else only(lastMathMode==='neg'?'setupNeg':'setup');
+  };
 
   // init
   renderOps();
   renderGameDesc();
+  renderFracDesc();
   subject='root';
   only('root');
 })();
