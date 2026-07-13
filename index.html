@@ -189,7 +189,7 @@
       <button class="modebtn subj-math" data-subject="math">
         <span class="mi">+ − × ÷</span>
         <span class="mt">Matemáticas</span>
-        <span class="md">Aritmética mental y operaciones con negativos</span>
+        <span class="md">Práctica mental y números enteros</span>
       </button>
       <button class="modebtn subj-lang" data-subject="lang">
         <span class="mi">Aa</span>
@@ -206,13 +206,13 @@
       <h2>Elegí un modo</h2>
       <button class="modebtn" data-mode="mental">
         <span class="mi">+ − × ÷ %</span>
-        <span class="mt">Aritmética mental</span>
+        <span class="mt">Práctica mental</span>
         <span class="md">Sumas, restas, multiplicación, división y porcentajes</span>
       </button>
       <button class="modebtn" data-mode="neg">
         <span class="mi">−5 + (−3)</span>
-        <span class="mt">Aritmética con negativos</span>
-        <span class="md">Suma y resta con negativos y ley de los signos</span>
+        <span class="mt">Números enteros</span>
+        <span class="md">Enteros con signo, ley de los signos y jerarquía</span>
       </button>
     </div>
   </section>
@@ -229,6 +229,7 @@
         <div class="op" data-op="div"><span class="sym">÷</span><span class="lbl">División</span></div>
         <div class="op" data-op="pct"><span class="sym">%</span><span class="lbl">Porcentaje</span></div>
         <div class="op" data-op="mix"><span class="sym">±×</span><span class="lbl">Mixto</span></div>
+        <div class="op" data-op="howq"><span class="sym">−a</span><span class="lbl">¿Cómo queda?</span></div>
       </div>
       <div class="field cfg" id="cfgAdd">
         <label>Dificultad de sumas</label>
@@ -279,7 +280,7 @@
   <section id="setupNeg" class="hidden">
     <button class="back" id="backNeg">← Modos</button>
     <div class="card" style="margin-bottom:16px">
-      <h2>Operaciones con negativos</h2>
+      <h2>Números enteros</h2>
       <div class="ops" id="opsNeg">
         <div class="op on" data-op="nadd"><span class="sym">+</span><span class="lbl">Suma</span></div>
         <div class="op" data-op="nsub"><span class="sym">−</span><span class="lbl">Resta</span></div>
@@ -288,6 +289,7 @@
         <div class="op" data-op="nchain"><span class="sym">( )</span><span class="lbl">Cadena +−</span></div>
         <div class="op" data-op="nchainmd"><span class="sym">×÷</span><span class="lbl">Cadena ×÷</span></div>
         <div class="op" data-op="nchainmix"><span class="sym">±×</span><span class="lbl">Cadena mixta</span></div>
+        <div class="op" data-op="nchainabs"><span class="sym">|±|</span><span class="lbl">Mixta + valor abs.</span></div>
       </div>
       <div class="field cfg show" id="cfgNeg">
         <label>Cantidad de dígitos (suma / resta)</label>
@@ -322,6 +324,12 @@
       <div class="field cfg" id="cfgChainMix">
         <label>Términos cadena mixta</label>
         <div class="seg multi" data-cfg="chainmix">
+          <button data-r="3" class="on">3 términos</button><button data-r="4">4 términos</button><button data-r="5">5 términos</button>
+        </div>
+      </div>
+      <div class="field cfg" id="cfgChainAbs">
+        <label>Términos mixta + valor absoluto</label>
+        <div class="seg multi" data-cfg="chainabs">
           <button data-r="3" class="on">3 términos</button><button data-r="4">4 términos</button><button data-r="5">5 términos</button>
         </div>
       </div>
@@ -405,11 +413,11 @@
   <!-- ===== FORMULAS ===== -->
   <section id="formulas" class="hidden">
     <div class="card" style="margin-bottom:16px" id="fBlockMental">
-      <h2>Aritmética mental</h2>
+      <h2>Práctica mental</h2>
       <div id="fMental"></div>
     </div>
     <div class="card" id="fBlockNeg" style="margin-bottom:16px">
-      <h2>Aritmética con negativos</h2>
+      <h2>Números enteros</h2>
       <div id="fNeg"></div>
     </div>
     <div class="card fcard-lang" id="fBlockLang">
@@ -493,12 +501,12 @@
   let subject='root'; // 'root' | 'math' | 'lang' — contexto para Progreso/Fórmulas
 
   // ---------- constantes ----------
-  const SYM={add:'+',sub:'−',mul:'×',div:'÷',pct:'%',nadd:'+',nsub:'−',nmul:'×',ndiv:'÷',nchain:'( )',nchainmd:'×÷',nchainmix:'±×'};
-  const NAME={add:'Suma',sub:'Resta',mul:'Mult',div:'División',pct:'Porcentaje',nadd:'Suma −',nsub:'Resta −',nmul:'Mult −',ndiv:'Div −',nchain:'Cadena +−',nchainmd:'Cadena ×÷',nchainmix:'Cadena mixta'};
+  const SYM={add:'+',sub:'−',mul:'×',div:'÷',pct:'%',nadd:'+',nsub:'−',nmul:'×',ndiv:'÷',nchain:'( )',nchainmd:'×÷',nchainmix:'±×',nchainabs:'|±|',howq:'−a'};
+  const NAME={add:'Suma',sub:'Resta',mul:'Mult',div:'División',pct:'Porcentaje',nadd:'Suma −',nsub:'Resta −',nmul:'Mult −',ndiv:'Div −',nchain:'Cadena +−',nchainmd:'Cadena ×÷',nchainmix:'Cadena mixta',nchainabs:'Mixta+abs',howq:'¿Cómo queda?'};
   // categorías mentales
-  const CATS_MENTAL=['add1','add2','add3','sub1','sub2','sub3','mul1','mul2','mul3','div1','div2','div3','pct1','pct2'];
+  const CATS_MENTAL=['add1','add2','add3','sub1','sub2','sub3','mul1','mul2','mul3','div1','div2','div3','pct1','pct2','howq1'];
   // categorías negativos
-  const CATS_NEG=['nadd1','nadd2','nadd3','nsub1','nsub2','nsub3','nmul1','nmul2','ndiv1','ndiv2','nchain3','nchain4','nchain5','nchainmd3','nchainmd4','nchainmd5','nchainmix3','nchainmix4','nchainmix5'];
+  const CATS_NEG=['nadd1','nadd2','nadd3','nsub1','nsub2','nsub3','nmul1','nmul2','ndiv1','ndiv2','nchain3','nchain4','nchain5','nchainmd3','nchainmd4','nchainmd5','nchainmix3','nchainmix4','nchainmix5','nchainabs3','nchainabs4','nchainabs5'];
   // (CATS se define más abajo, tras las categorías de lengua)
   const CAT_INFO={
     add1:{op:'add',label:'0–99'},   add2:{op:'add',label:'100–499'}, add3:{op:'add',label:'500–999'},
@@ -506,16 +514,18 @@
     mul1:{op:'mul',label:'1×1'},    mul2:{op:'mul',label:'2×1'}, mul3:{op:'mul',label:'2×2'},
     div1:{op:'div',label:'2÷1'},    div2:{op:'div',label:'3÷1'},     div3:{op:'div',label:'3÷2'},
     pct1:{op:'pct',label:'2 díg'},  pct2:{op:'pct',label:'3 díg'},
+    howq1:{op:'howq',label:'op'},
     nadd1:{op:'nadd',label:'1 díg'},nadd2:{op:'nadd',label:'2 díg'}, nadd3:{op:'nadd',label:'3 díg'},
     nsub1:{op:'nsub',label:'1 díg'},nsub2:{op:'nsub',label:'2 díg'}, nsub3:{op:'nsub',label:'3 díg'},
     nmul1:{op:'nmul',label:'1×1'},  nmul2:{op:'nmul',label:'2×1'},
     ndiv1:{op:'ndiv',label:'1÷1'},  ndiv2:{op:'ndiv',label:'2÷1'},
     nchain3:{op:'nchain',label:'3 térm'},nchain4:{op:'nchain',label:'4 térm'},nchain5:{op:'nchain',label:'5 térm'},
     nchainmd3:{op:'nchainmd',label:'3 térm'},nchainmd4:{op:'nchainmd',label:'4 térm'},nchainmd5:{op:'nchainmd',label:'5 térm'},
-    nchainmix3:{op:'nchainmix',label:'3 térm'},nchainmix4:{op:'nchainmix',label:'4 térm'},nchainmix5:{op:'nchainmix',label:'5 térm'}
+    nchainmix3:{op:'nchainmix',label:'3 térm'},nchainmix4:{op:'nchainmix',label:'4 térm'},nchainmix5:{op:'nchainmix',label:'5 térm'},
+    nchainabs3:{op:'nchainabs',label:'3 térm'},nchainabs4:{op:'nchainabs',label:'4 térm'},nchainabs5:{op:'nchainabs',label:'5 térm'}
   };
-  const OPS_MENTAL=['add','sub','mul','div','pct'];
-  const OPS_NEG=['nadd','nsub','nmul','ndiv','nchain','nchainmd','nchainmix'];
+  const OPS_MENTAL=['add','sub','mul','div','pct','howq'];
+  const OPS_NEG=['nadd','nsub','nmul','ndiv','nchain','nchainmd','nchainmix','nchainabs'];
   // ---- lengua: clases de palabras ----
   const LANG_TYPES=['sust','adj','art','verb'];
   const LANG_NAME={sust:'Sustantivo',adj:'Adjetivo',art:'Artículo',verb:'Verbo',otra:'Otra'};
@@ -538,7 +548,7 @@
   const CATS=[...CATS_MENTAL,...CATS_NEG,...CATS_LANG];
   function catOf(op,val){return op+val;}
 
-  const KEY='practicaMental_v11';
+  const KEY='practicaMental_v12';
   function blankCats(){const o={};CATS.forEach(c=>o[c]=0);return o;}
   function blankData(){return {streak:blankCats(),best:blankCats(),total:blankCats(),days:{}};}
   function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(!d||!d.streak)return blankData();
@@ -589,7 +599,8 @@
     const el=e.target.closest('.op');if(!el)return;
     const op=el.dataset.op;
     if(op==='mix'){selected.clear();selected.add('mix');}
-    else{selected.delete('mix');if(selected.has(op)){if(selected.size>1)selected.delete(op);}else selected.add(op);}
+    else if(op==='howq'){selected.clear();selected.add('howq');}
+    else{selected.delete('mix');selected.delete('howq');if(selected.has(op)){if(selected.size>1)selected.delete(op);}else selected.add(op);}
     renderOps();
   });
   function renderOps(){
@@ -614,7 +625,8 @@
   const cfgChain=new Set([3]);
   const cfgChainMd=new Set([3]);
   const cfgChainMix=new Set([3]);
-  const NEG_SETS={neg:cfgNeg,nmul:cfgNmul,ndiv:cfgNdiv,chain:cfgChain,chainmd:cfgChainMd,chainmix:cfgChainMix};
+  const cfgChainAbs=new Set([3]);
+  const NEG_SETS={neg:cfgNeg,nmul:cfgNmul,ndiv:cfgNdiv,chain:cfgChain,chainmd:cfgChainMd,chainmix:cfgChainMix,chainabs:cfgChainAbs};
   document.querySelectorAll('#setupNeg .seg.multi').forEach(seg=>{
     seg.addEventListener('click',e=>{
       const b=e.target.closest('button');if(!b)return;
@@ -630,6 +642,7 @@
     $('#cfgChain').classList.toggle('show',selNeg.has('nchain'));
     $('#cfgChainMd').classList.toggle('show',selNeg.has('nchainmd'));
     $('#cfgChainMix').classList.toggle('show',selNeg.has('nchainmix'));
+    $('#cfgChainAbs').classList.toggle('show',selNeg.has('nchainabs'));
   }
   $('#opsNeg').addEventListener('click',e=>{
     const el=e.target.closest('.op');if(!el)return;
@@ -755,6 +768,33 @@
     const ops=['×'];for(let i=2;i<nTerms;i++)ops.push('+');
     return {terms,ops,ans:evalMix(terms,ops),text:terms.map((t,i)=>i===0?t:` ${ops[i-1]} ${t}`).join('')};
   }
+  // cadena mixta que además envuelve uno o dos términos en valor absoluto |x|
+  function makeChainAbs(nTerms){
+    for(let attempt=0;attempt<400;attempt++){
+      const terms=[];
+      for(let i=0;i<nTerms;i++){const mag=rnd(2,12);const sign=Math.random()<0.5?-1:1;terms.push(mag*sign);}
+      const ops=[];
+      for(let i=1;i<nTerms;i++){ops.push(pick(['+','−','×','÷']));}
+      const absFlags=terms.map(()=>false);
+      const nAbs = Math.random()<0.5?1:2;
+      const idxs=shuffleArr([...terms.keys()]).slice(0,nAbs);
+      idxs.forEach(i=>absFlags[i]=true);
+      const effTerms=terms.map((t,i)=>absFlags[i]?Math.abs(t):t);
+      const val=evalMix(effTerms,ops);
+      if(val===null||!Number.isInteger(val)) continue;
+      let text=absFlags[0]?`|${terms[0]}|`:`${terms[0]}`;
+      for(let i=1;i<nTerms;i++){
+        const t=terms[i];
+        const shown = absFlags[i] ? `|${t}|` : (t<0?`(${t})`:`${t}`);
+        text+=` ${ops[i-1]} ${shown}`;
+      }
+      return {terms,ops,absFlags,effTerms,ans:val,text};
+    }
+    const d=makeChainMix(nTerms);
+    return {terms:d.terms,ops:d.ops,absFlags:d.terms.map(()=>false),effTerms:d.terms,ans:d.ans,text:d.text};
+  }
+  function shuffleArr(a){return a.sort(()=>Math.random()-0.5);}
+
   // evalúa respetando jerarquía; devuelve null si alguna división no es exacta
   function evalMix(terms,ops){
     // primera pasada: resolver × ÷ (izq a der dentro de ese nivel)
@@ -898,6 +938,16 @@
     }
     return `× y ÷ van de izquierda a derecha, multiplicando los signos: ${steps.join(' → ')}. Resultado: <b>${acc}</b>.`;
   }
+  function explainChainAbs(p){
+    // primero resolver los valores absolutos, luego evaluar la cadena con jerarquía
+    const parts=p.terms.map((t,i)=>p.absFlags[i]?`|${t}| = ${Math.abs(t)}`:null).filter(Boolean);
+    let s='';
+    if(parts.length) s+=`Primero los valores absolutos: ${parts.join(', ')} (lo de adentro se vuelve positivo). `;
+    // reusar explainChainMix con términos efectivos
+    const eff={terms:p.effTerms,ops:p.ops};
+    s+=explainChainMix(eff).replace(/^/,'Luego la jerarquía: ');
+    return s;
+  }
   function explainChainMix(p){
     const {terms,ops}=p;
     // reconstruye visual y marca qué se resuelve primero
@@ -943,12 +993,71 @@
     if(p.op==='nchain')return explainChain(p);
     if(p.op==='nchainmd')return explainChainMd(p);
     if(p.op==='nchainmix')return explainChainMix(p);
+    if(p.op==='nchainabs')return explainChainAbs(p);
+    if(p.op==='howq')return explainHowQ(p);
     if(p.b>=10)return explainDivEstimate(p.a,p.b);
     return explainDivDigit(p.a,p.b);
   }
+  function explainHowQ(p){
+    const reglas={
+      sumres:'Suma/resta con signos: mismo signo se juntan y conservan el signo; signos distintos se restan y gana el del número más grande. Restar un negativo es sumar.',
+      muldiv:'Multiplicación/división con signos: signos iguales dan positivo, signos distintos dan negativo.',
+      abs:'Valor absoluto: primero resolvés lo de adentro de las barras, y el resultado se vuelve positivo. |−4| = 4.',
+      absout:'Primero resolvés el valor absoluto (se vuelve positivo), y después aplicás lo de afuera. −|4| = −4.'
+    };
+    return `${reglas[p.kind]||''} El resultado es <b>${p.ans}</b>.`;
+  }
 
   // ---------- construir problemas ----------
+  // ¿Cómo queda la operación? — operación simple con negativos y valor absoluto
+  function makeHowQ(){
+    const s=()=>Math.random()<0.5?-1:1;
+    const n=()=>rnd(1,20);
+    const kind=pick(['sumres','muldiv','abs','absout']);
+    let text,ans;
+    if(kind==='sumres'){
+      const a=n()*s(), b=n()*s();
+      const plus=Math.random()<0.5;
+      ans = plus ? a+b : a-b;
+      const bt = b<0?`(${b})`:`${b}`;
+      text = `${a} ${plus?'+':'−'} ${bt}`;
+    } else if(kind==='muldiv'){
+      if(Math.random()<0.5){
+        const a=rnd(2,12)*s(), b=rnd(2,12)*s();
+        ans=a*b; const bt=b<0?`(${b})`:`${b}`; text=`${a} × ${bt}`;
+      } else {
+        const b=rnd(2,9)*s(), q=rnd(2,9)*s(); const a=b*q;
+        ans=a/b; const bt=b<0?`(${b})`:`${b}`; text=`${a} ÷ ${bt}`;
+      }
+    } else if(kind==='abs'){
+      // valor absoluto simple: |x| donde x puede tener una operación dentro
+      const inner=n()*s(), inner2=n()*s();
+      const plus=Math.random()<0.5;
+      const val = plus ? inner+inner2 : inner-inner2;
+      ans=Math.abs(val);
+      const i2=inner2<0?`(${inner2})`:`${inner2}`;
+      text=`| ${inner} ${plus?'+':'−'} ${i2} |`;
+    } else {
+      // valor absoluto con algo afuera: |x| ± y  ó  −|x|
+      if(Math.random()<0.5){
+        const x=n()*s(), y=n();
+        const plus=Math.random()<0.5;
+        ans = plus ? Math.abs(x)+y : Math.abs(x)-y;
+        text=`| ${x} | ${plus?'+':'−'} ${y}`;
+      } else {
+        const x=n()*s();
+        ans=-Math.abs(x);
+        text=`− | ${x} |`;
+      }
+    }
+    return {ans,text,kind};
+  }
+
   function makeProblemMental(){
+    if(selected.has('howq')){
+      const d=makeHowQ();
+      return {op:'howq',cat:'howq1',ans:d.ans,text:d.text,kind:d.kind};
+    }
     const pool=selected.has('mix')?['add','sub','mul','div','pct']:[...selected];
     const op=pick(pool);
     let a,b,ans,cat,text;
@@ -975,6 +1084,11 @@
       const n=pick([...cfgChainMix]);
       const d=makeChainMix(n);
       return {op,cat:catOf('nchainmix',n),terms:d.terms,ops:d.ops,ans:d.ans,text:d.text};
+    }
+    if(op==='nchainabs'){
+      const n=pick([...cfgChainAbs]);
+      const d=makeChainAbs(n);
+      return {op,cat:catOf('nchainabs',n),terms:d.terms,ops:d.ops,absFlags:d.absFlags,effTerms:d.effTerms,ans:d.ans,text:d.text};
     }
     if(op==='nmul'||op==='ndiv'){
       const fmt=pick([...(op==='nmul'?cfgNmul:cfgNdiv)]);
@@ -1570,7 +1684,7 @@
   let probs=[],idx=0,log=[],tStart=0,qStart=0,tickTimer=null,mode='mental',allowNeg=false;
   function startGame(m){
     mode=m;
-    allowNeg=(m==='neg');
+    allowNeg = (m==='neg') || (m==='mental' && selected.has('howq'));
     const n = m==='neg' ? countN : count;
     probs=[];for(let i=0;i<n;i++)probs.push(m==='neg'?makeProblemNeg():makeProblemMental());
     idx=0;log=[];
@@ -1676,12 +1790,13 @@
   // ================= DASHBOARD =================
   const CATS_BY_OP={
     add:['add1','add2','add3'],sub:['sub1','sub2','sub3'],mul:['mul1','mul2','mul3'],
-    div:['div1','div2','div3'],pct:['pct1','pct2'],
+    div:['div1','div2','div3'],pct:['pct1','pct2'],howq:['howq1'],
     nadd:['nadd1','nadd2','nadd3'],nsub:['nsub1','nsub2','nsub3'],
     nmul:['nmul1','nmul2'],ndiv:['ndiv1','ndiv2'],
     nchain:['nchain3','nchain4','nchain5'],
     nchainmd:['nchainmd3','nchainmd4','nchainmd5'],
-    nchainmix:['nchainmix3','nchainmix4','nchainmix5']
+    nchainmix:['nchainmix3','nchainmix4','nchainmix5'],
+    nchainabs:['nchainabs3','nchainabs4','nchainabs5']
   };
   const MATH_DASH_OPS=[...OPS_MENTAL,...OPS_NEG];
   function statBlock(op,field){
@@ -1749,13 +1864,14 @@
     {t:'Multiplicación 2×1 (descomposición)',b:'Partís el número de dos dígitos en decena y unidad, multiplicás cada parte y sumás. Siempre arrancás por la decena. <span class="ex">7 × 34 → 7×30 = 210, 7×4 = 28 → 238</span>. <span class="ex">8 × 46 → 320 + 48 = 368</span>'},
     {t:'División 2÷1 (izquierda a derecha)',b:'Dividís dígito por dígito de izquierda a derecha. Lo que sobra se pega al siguiente dígito. <span class="ex">75 ÷ 5 → 7÷5 = 1 sobra 2, pego el 2 al 5 = 25, 25÷5 = 5 → 15</span>'},
     {t:'Porcentajes (base 10%)',b:'El 10% es correr la coma un lugar. El 1% dos lugares. Con eso armás todo: 20% = 10%×2, 5% = mitad del 10%, 15% = 10% + 5%, 25% = ÷4, 50% = mitad. <span class="ex">35% de 80 → 10% = 8, 30% = 24, 5% = 4 → 28</span>'},
-    {t:'Jerarquía de operaciones',b:'Se resuelve en este orden:<br>1. Paréntesis ( )<br>2. Potencias y raíces (3², √)<br>3. Multiplicación y división (× ÷)<br>4. Sumas y restas (+ −)<br><span class="ex">3 + 4 × 2 = 3 + 8 = 11</span> (no 14)'}
+    {t:'Jerarquía de operaciones',b:'Se resuelve en este orden:<br>1. Paréntesis ( ) y valor absoluto | |<br>2. Potencias y raíces (3², √)<br>3. Multiplicación y división (× ÷)<br>4. Sumas y restas (+ −)<br><span class="ex">3 + 4 × 2 = 3 + 8 = 11</span> (no 14)'}
   ];
   const FORMULAS_NEG=[
     {t:'Ley universal de los signos',b:'Signos iguales → <b>+</b> · signos distintos → <b>−</b>. <span class="ex">−(−3) = +3</span> · <span class="ex">+(−3) = −3</span>'},
     {t:'Suma y resta',b:'Signos iguales se suman, signos distintos se restan. El resultado se queda con el signo del número más grande. <span class="ex">−5 − 3 = −8</span> · <span class="ex">−5 + 8 = 3</span> · <span class="ex">5 + (−8) = −3</span>'},
     {t:'Multiplicación y división',b:'Hacés la operación normal y multiplicás los signos (ley universal). <span class="ex">−4 × −3 = 12</span> · <span class="ex">−12 ÷ 3 = −4</span> · <span class="ex">6 × −5 = −30</span>'},
-    {t:'Jerarquía de operaciones',b:'Se resuelve en este orden:<br>1. Paréntesis ( )<br>2. Potencias y raíces (3², √)<br>3. Multiplicación y división (× ÷)<br>4. Sumas y restas (+ −)<br><span class="ex">−3 + 4 × (−2) = −3 + (−8) = −11</span>'}
+    {t:'Valor absoluto | |',b:'Convierte lo de adentro en positivo. Primero resolvés todo lo que está dentro de las barras, luego se vuelve positivo, y después aplicás lo de afuera. <span class="ex">|−7| = 7</span> · <span class="ex">|−8+4| = |−4| = 4</span> · <span class="ex">−|−4| = −4</span>'},
+    {t:'Jerarquía de operaciones',b:'Se resuelve en este orden:<br>1. Paréntesis ( ) y valor absoluto | |<br>2. Potencias y raíces (3², √)<br>3. Multiplicación y división (× ÷)<br>4. Sumas y restas (+ −)<br><span class="ex">−3 + 4 × (−2) = −3 + (−8) = −11</span>'}
   ];
   const FORMULAS_LANG=[
     {t:'Artículo — qué es',b:'Va antes del sustantivo para presentarlo. No tiene significado propio, solo acompaña. <span class="ex">el, la, un, una</span>'},
