@@ -145,6 +145,8 @@
   .word.ok{border-color:var(--right);background:#eefaf5;color:var(--right);font-weight:700}
   .word.err{border-color:var(--wrong);background:#fdf1f2;color:var(--wrong)}
   .word.should{border-color:var(--right);border-style:dashed}
+  .word.pulse{animation:pulseSel .4s}
+  @keyframes pulseSel{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
   .boxes{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:4px}
   .box{background:var(--panel);border:1.5px dashed var(--line);border-radius:12px;padding:12px;min-height:74px;transition:.12s}
   .box.hot{border-color:var(--accent);background:#eef0fc}
@@ -1457,94 +1459,94 @@
     {w:['El','cielo','es','azul'],i:3,answer:'adj'}
   ];
   // ===== Bancos de identificación pura (adverbio, pronombre, preposición, conjunción) =====
-  // {w:[palabras], i:índice de la palabra correcta}
+  // idx = lista de TODAS las palabras de esa clase en la frase (hay que marcarlas todas)
   const ADV_BANK=[
-    {w:['Luis','corre','muy','rápido','en','las','mañanas'],i:3},
-    {w:['El','profesor','explica','la','lección','claramente'],i:5},
-    {w:['El','gato','siempre','duerme','sobre','la','cama'],i:2},
-    {w:['Ayer','llegamos','tarde','a','la','reunión'],i:2},
-    {w:['Ella','resolvió','el','examen','fácilmente','y','sin','ayuda'],i:4},
-    {w:['El','perro','ladra','fuerte','cuando','pasa','gente'],i:3},
-    {w:['Los','niños','juegan','afuera','todas','las','tardes'],i:3},
-    {w:['El','tren','de','la','mañana','llegó','tarde'],i:6},
-    {w:['Nosotros','estudiamos','mucho','para','el','examen','final'],i:2},
-    {w:['La','abuela','cocina','tranquilamente','en','la','cocina'],i:3},
-    {w:['El','avión','despegó','puntualmente','esta','madrugada'],i:3},
-    {w:['Mi','hermano','maneja','despacio','por','la','autopista'],i:3},
-    {w:['Las','aves','vuelan','lejos','durante','el','invierno'],i:3},
-    {w:['El','médico','habló','pausadamente','con','los','pacientes'],i:3},
-    {w:['Terminé','el','trabajo','rápidamente','esta','tarde'],i:3},
-    {w:['El','equipo','entrena','duro','todos','los','días'],i:3},
-    {w:['Ella','canta','hermosamente','en','el','coro','del','colegio'],i:2},
-    {w:['El','carro','frenó','bruscamente','frente','a','la','casa'],i:3},
-    {w:['Los','estudiantes','respondieron','correctamente','todas','las','preguntas'],i:3},
-    {w:['El','viejo','reloj','todavía','funciona','bien'],i:3}
+    {w:['Luis','corre','muy','rápido','en','las','mañanas'],idx:[2,3]},
+    {w:['El','profesor','explica','la','lección','claramente'],idx:[5]},
+    {w:['El','gato','siempre','duerme','sobre','la','cama'],idx:[2]},
+    {w:['Ayer','llegamos','tarde','a','la','reunión'],idx:[0,2]},
+    {w:['Ella','resolvió','el','examen','fácilmente','sin','ayuda'],idx:[4]},
+    {w:['El','perro','ladra','fuerte','de','noche'],idx:[3]},
+    {w:['Los','niños','juegan','afuera','cada','tarde'],idx:[3]},
+    {w:['El','tren','llegó','tarde','esta','madrugada'],idx:[3]},
+    {w:['Nosotros','estudiamos','mucho','para','el','examen'],idx:[2]},
+    {w:['La','abuela','cocina','tranquilamente','en','casa'],idx:[3]},
+    {w:['El','avión','despegó','puntualmente','esta','madrugada'],idx:[3]},
+    {w:['Mi','hermano','maneja','despacio','por','precaución'],idx:[3]},
+    {w:['Las','aves','vuelan','lejos','en','invierno'],idx:[3]},
+    {w:['El','médico','habló','pausadamente','con','ellos'],idx:[3]},
+    {w:['Terminé','el','trabajo','rápidamente','esta','tarde'],idx:[3,5]},
+    {w:['El','equipo','entrena','duro','cada','día'],idx:[3]},
+    {w:['Ella','canta','hermosamente','en','el','coro'],idx:[2]},
+    {w:['El','carro','frenó','bruscamente','en','la','curva'],idx:[3]},
+    {w:['Los','estudiantes','respondieron','correctamente','el','examen'],idx:[3]},
+    {w:['El','viejo','reloj','todavía','funciona','bien'],idx:[3,5]}
   ];
   const PRON_BANK=[
-    {w:['El','regalo','es','para','ella'],i:4},
-    {w:['Mi','hermano','lo','trajo','ayer'],i:2},
-    {w:['La','profesora','nos','explicó','la','tarea'],i:2},
-    {w:['El','libro','es','mío','no','tuyo'],i:3},
-    {w:['Ayer','ellos','ganaron','el','partido','final'],i:1},
-    {w:['Cómprame','eso','en','la','tienda','del','centro'],i:1},
-    {w:['En','la','fiesta','ella','bailó','toda','la','noche'],i:3},
-    {w:['El','maestro','me','felicitó','frente','a','todos'],i:2},
-    {w:['Ese','trabajo','lo','hicimos','nosotros','anoche'],i:2},
-    {w:['Le','entregué','el','informe','a','tiempo'],i:0},
-    {w:['La','casa','de','la','esquina','es','suya'],i:6},
-    {w:['Todos','sabían','que','tú','ganarías','el','premio'],i:3},
-    {w:['El','carro','nuevo','es','nuestro','desde','ayer'],i:4},
-    {w:['Ayer','vi','a','María','y','la','saludé'],i:5},
-    {w:['Esto','no','sirve','para','la','reparación'],i:0},
-    {w:['Los','vecinos','nos','invitaron','a','la','cena'],i:2},
-    {w:['El','premio','fue','entregado','a','ellos','anoche'],i:5},
-    {w:['Aquello','que','dijiste','me','molestó','mucho'],i:0},
-    {w:['La','decisión','final','la','tomaron','ellos'],i:5},
-    {w:['Te','llamé','anoche','pero','no','contestaste'],i:0}
+    {w:['El','regalo','es','para','ella'],idx:[4]},
+    {w:['Mi','hermano','lo','trajo','anoche'],idx:[2]},
+    {w:['El','libro','es','mío','no','tuyo'],idx:[3,5]},
+    {w:['Ayer','ellos','ganaron','el','partido'],idx:[1]},
+    {w:['Cómprame','eso','en','el','centro'],idx:[1]},
+    {w:['El','maestro','me','felicitó','ayer'],idx:[2]},
+    {w:['Ese','trabajo','lo','hicimos','nosotros'],idx:[2,4]},
+    {w:['Le','entregué','el','informe','a','tiempo'],idx:[0]},
+    {w:['La','casa','de','la','esquina','es','suya'],idx:[6]},
+    {w:['Todos','sabían','que','tú','ganarías'],idx:[3]},
+    {w:['El','carro','nuevo','es','nuestro'],idx:[4]},
+    {w:['Ayer','vi','a','María','y','la','saludé'],idx:[5]},
+    {w:['Esto','no','sirve','para','nada'],idx:[0]},
+    {w:['Los','vecinos','nos','invitaron','anoche'],idx:[2]},
+    {w:['El','premio','fue','entregado','a','ellos'],idx:[5]},
+    {w:['Aquello','fue','un','gran','error'],idx:[0]},
+    {w:['La','decisión','la','tomaron','ellos'],idx:[2,4]},
+    {w:['Te','llamé','pero','no','contestaste'],idx:[0]},
+    {w:['Nosotros','ganamos','el','torneo','anoche'],idx:[0]},
+    {w:['Ella','me','contó','la','historia'],idx:[0,1]}
   ];
   const PREP_BANK=[
-    {w:['Voy','a','Caracas','con','mi','familia','el','domingo'],i:1},
-    {w:['El','libro','de','historia','está','sobre','la','mesa'],i:5},
-    {w:['Salgo','de','la','casa','muy','temprano','cada','día'],i:1},
-    {w:['El','regalo','que','compré','es','para','mi','abuela'],i:5},
-    {w:['Caminamos','hacia','el','parque','después','del','almuerzo'],i:1},
-    {w:['Vivimos','sin','miedo','a','pesar','de','todo'],i:1},
-    {w:['El','gato','se','escondió','bajo','la','cama','vieja'],i:4},
-    {w:['Corro','por','el','parque','todas','las','mañanas'],i:1},
-    {w:['El','tren','viene','desde','la','ciudad','del','norte'],i:3},
-    {w:['Estudié','toda','la','noche','hasta','el','amanecer'],i:4},
-    {w:['Hablé','con','el','director','sobre','el','proyecto'],i:1},
-    {w:['El','perro','durmió','en','el','jardín','toda','la','tarde'],i:3},
-    {w:['Vengo','de','Venezuela','pero','vivo','en','España'],i:1},
-    {w:['El','soldado','luchó','contra','el','enemigo','sin','descanso'],i:3},
-    {w:['La','mesa','está','entre','las','dos','ventanas','grandes'],i:3},
-    {w:['El','acusado','se','presentó','ante','el','juez','ayer'],i:4},
-    {w:['El','perro','corrió','tras','el','balón','por','el','patio'],i:3},
-    {w:['Compré','pan','y','queso','para','el','desayuno'],i:4},
-    {w:['El','café','con','leche','estaba','muy','caliente','hoy'],i:2},
-    {w:['Llegamos','a','la','estación','después','de','medianoche'],i:1}
+    {w:['Voy','a','Caracas','con','mi','familia'],idx:[1,3]},
+    {w:['El','libro','está','sobre','la','mesa'],idx:[3]},
+    {w:['Salgo','de','la','casa','muy','temprano'],idx:[1]},
+    {w:['El','regalo','es','para','mi','abuela'],idx:[3]},
+    {w:['Caminamos','hacia','el','parque','al','mediodía'],idx:[1]},
+    {w:['Vivimos','sin','miedo','muchos','años'],idx:[1]},
+    {w:['El','gato','se','escondió','bajo','la','cama'],idx:[4]},
+    {w:['Corro','por','el','parque','cada','mañana'],idx:[1]},
+    {w:['El','tren','viene','desde','el','norte'],idx:[3]},
+    {w:['Estudié','toda','la','noche','hasta','el','amanecer'],idx:[4]},
+    {w:['Hablé','con','el','director','esta','mañana'],idx:[1]},
+    {w:['El','perro','durmió','en','el','jardín'],idx:[3]},
+    {w:['Vengo','de','Venezuela','pero','vivo','en','España'],idx:[1,5]},
+    {w:['El','soldado','luchó','contra','el','enemigo'],idx:[3]},
+    {w:['La','mesa','está','entre','las','ventanas'],idx:[3]},
+    {w:['El','acusado','se','presentó','ante','el','juez'],idx:[4]},
+    {w:['El','perro','corrió','tras','el','balón'],idx:[3]},
+    {w:['Compré','pan','para','el','desayuno'],idx:[2]},
+    {w:['El','café','con','leche','estaba','caliente'],idx:[2]},
+    {w:['Llegamos','a','la','estación','muy','tarde'],idx:[1]}
   ];
   const CONJ_BANK=[
-    {w:['Compré','pan','y','queso','en','la','panadería','nueva'],i:2},
-    {w:['Quiero','ir','al','cine','pero','no','tengo','dinero'],i:4},
-    {w:['No','estudié','anoche','porque','estaba','muy','cansado'],i:3},
-    {w:['Terminé','el','trabajo','y','entregué','el','informe','completo'],i:3},
-    {w:['El','carro','es','viejo','pero','todavía','funciona','bien'],i:4},
-    {w:['Trabajo','todos','los','días','aunque','esté','enfermo'],i:4},
-    {w:['Puedes','tomar','café','o','té','con','el','postre'],i:3},
-    {w:['El','niño','ni','come','ni','duerme','últimamente'],i:2},
-    {w:['Fui','a','la','tienda','porque','necesitaba','comida'],i:4},
-    {w:['Ella','canta','muy','bien','y','baila','mejor'],i:4},
-    {w:['Llegué','tarde','pero','alcancé','el','último','tren'],i:2},
-    {w:['Estudia','mucho','porque','quiere','entrar','a','la','universidad'],i:2},
-    {w:['No','fui','a','la','fiesta','porque','llovía','mucho'],i:5},
-    {w:['El','vestido','es','caro','pero','muy','elegante'],i:4},
-    {w:['Corrió','toda','la','carrera','aunque','estaba','lesionado'],i:4},
-    {w:['Quiero','descansar','pero','tengo','mucho','que','hacer'],i:2},
-    {w:['Preparó','la','cena','y','lavó','todos','los','platos'],i:3},
-    {w:['No','era','rico','sino','muy','trabajador','y','honesto'],i:3},
-    {w:['Salimos','temprano','porque','el','viaje','era','largo'],i:2},
-    {w:['Puedes','quedarte','aquí','o','venir','con','nosotros'],i:3}
+    {w:['Compré','pan','y','queso','en','la','tienda'],idx:[2]},
+    {w:['Quiero','ir','pero','no','tengo','dinero'],idx:[2]},
+    {w:['No','estudié','porque','estaba','muy','cansado'],idx:[2]},
+    {w:['Terminé','el','trabajo','y','entregué','el','informe'],idx:[3]},
+    {w:['El','carro','es','viejo','pero','funciona'],idx:[4]},
+    {w:['Trabajo','todos','los','días','aunque','llueva'],idx:[4]},
+    {w:['Puedes','tomar','café','o','té'],idx:[3]},
+    {w:['El','niño','ni','come','ni','duerme'],idx:[2,4]},
+    {w:['Fui','a','la','tienda','porque','necesitaba','comida'],idx:[4]},
+    {w:['Ella','canta','muy','bien','y','baila'],idx:[4]},
+    {w:['Llegué','tarde','pero','alcancé','el','tren'],idx:[2]},
+    {w:['Estudia','mucho','porque','quiere','graduarse'],idx:[2]},
+    {w:['No','fui','a','la','fiesta','porque','llovía'],idx:[5]},
+    {w:['El','vestido','es','caro','pero','elegante'],idx:[4]},
+    {w:['Corrió','la','carrera','aunque','estaba','lesionado'],idx:[3]},
+    {w:['Quiero','descansar','pero','tengo','trabajo'],idx:[2]},
+    {w:['Preparó','la','cena','y','lavó','los','platos'],idx:[3]},
+    {w:['No','era','rico','sino','muy','trabajador'],idx:[3]},
+    {w:['Salimos','temprano','porque','el','viaje','era','largo'],idx:[2]},
+    {w:['Puedes','quedarte','o','venir','con','nosotros'],idx:[2]}
   ];
 
   // Para eso necesito subtipos en PHRASES; los infiero con un mapa de palabras conocidas.
@@ -1695,6 +1697,7 @@
     return [];
   }
   const GAME_WORDNAME={art:'el artículo',sust:'el sustantivo',adj:null,verb:'el verbo',adv:'el adverbio',pron:'el pronombre',prep:'la preposición',conj:'la conjunción'};
+  const GAME_WORDNAME_PL={adv:'adverbios',pron:'pronombres',prep:'preposiciones',conj:'conjunciones'};
   let wordChosen=false;  // si ya se eligió correctamente la palabra
   function showPicks(){
     const it=lItems[lIdx].it;
@@ -1712,8 +1715,12 @@
       $('#phraseHint').textContent='¿La palabra marcada es adjetivo o verbo?';
       renderPickRows();
     }else if(IDENT_GAMES.includes(langGame)){
-      // identificación pura: solo tocar la palabra correcta, sin subtipos
-      $('#phraseHint').textContent=`Tocá cuál es ${GAME_WORDNAME[langGame]} en la frase.`;
+      // identificación pura: tocar la(s) palabra(s) de esa clase, sin subtipos
+      const need=it.idx.length;
+      const nombre = need>1 ? GAME_WORDNAME_PL[langGame] : GAME_WORDNAME[langGame];
+      $('#phraseHint').textContent = need>1
+        ? `Hay ${need} ${nombre} en la frase. Marcalas TODAS (0/${need}) y dale Revisar.`
+        : `Tocá cuál es ${nombre} en la frase.`;
       $('#checkL').textContent='Revisar';
     }else{
       $('#phraseHint').textContent=`Tocá cuál es ${GAME_WORDNAME[langGame]} en la frase.`;
@@ -1767,10 +1774,15 @@
     // juegos art/sust/verb: fase de elegir la palabra
     if(langGame==='adj')return;          // adj no elige palabra
     if(IDENT_GAMES.includes(langGame)){
-      // identificación pura: seleccionar palabra (una sola), evalúa en Revisar
-      document.querySelectorAll('#words .word').forEach(x=>x.classList.remove('sel'));
-      w.classList.add('sel');
-      pickState.chosen=parseInt(w.dataset.i,10);
+      // identificación pura: se pueden marcar varias palabras (toggle). Evalúa en Revisar.
+      if(!pickState.chosen) pickState.chosen=new Set();
+      const wi=parseInt(w.dataset.i,10);
+      if(pickState.chosen.has(wi)){ pickState.chosen.delete(wi); w.classList.remove('sel'); }
+      else { pickState.chosen.add(wi); w.classList.add('sel'); }
+      // hint dinámico: cuántas faltan
+      const it=lItems[lIdx].it;
+      const need=it.idx.length, got=pickState.chosen.size;
+      if(need>1) $('#phraseHint').textContent=`Marcá TODAS (${got}/${need}) y dale Revisar.`;
       return;
     }
     if(wordChosen)return;                 // ya se eligió, no cambiar
@@ -1811,14 +1823,23 @@
     return help[langGame]||'';
   }
   function identExplain(it){
-    const word=it.w[it.i];
+    const words=it.idx.map(i=>`"${it.w[i]}"`);
+    const list = words.length>1 ? `son ${words.join(' y ')}` : `es ${words[0]}`;
     const why={
-      adv:`El adverbio es <b>"${word}"</b>: modifica al verbo (cómo/cuándo/dónde/cuánto) y no cambia de género.`,
-      pron:`El pronombre es <b>"${word}"</b>: reemplaza a un nombre. Podés cambiarlo por el nombre de una persona o cosa.`,
-      prep:`La preposición es <b>"${word}"</b>: arrastra un nombre detrás y no puede ir sola.`,
-      conj:`La conjunción es <b>"${word}"</b>: une dos cosas del mismo nivel (palabras o frases que se sostienen solas).`
+      adv:`El adverbio ${list}: modifica al verbo (cómo/cuándo/dónde/cuánto) y no cambia de género.`,
+      pron:`El pronombre ${list}: reemplaza a un nombre. Podés cambiarlo por el nombre de una persona o cosa.`,
+      prep:`La preposición ${list}: arrastra un nombre detrás y no puede ir sola.`,
+      conj:`La conjunción ${list}: une dos cosas del mismo nivel (palabras o frases que se sostienen solas).`
     };
-    return why[langGame]||`Era "${word}".`;
+    // ajustar concordancia singular/plural del artículo inicial
+    let s=why[langGame]||`Eran ${words.join(', ')}.`;
+    if(words.length>1){
+      s=s.replace(/^El adverbio son/,'Los adverbios son')
+         .replace(/^El pronombre son/,'Los pronombres son')
+         .replace(/^La preposición son/,'Las preposiciones son')
+         .replace(/^La conjunción son/,'Las conjunciones son');
+    }
+    return s;
   }
   function renderPlacements(){
     document.querySelectorAll('#boxes .drop').forEach(d=>d.innerHTML='');
@@ -1872,22 +1893,36 @@
   }
 
   function checkPicks(){
-    // juegos de identificación pura: solo comparar palabra elegida
+    // juegos de identificación pura: comparar el conjunto elegido contra it.idx
     if(IDENT_GAMES.includes(langGame)){
       const it=lItems[lIdx].it;
-      if(pickState.chosen==null){
+      const chosen = pickState.chosen instanceof Set ? pickState.chosen : new Set();
+      const need=it.idx.length;
+      if(chosen.size===0){
         $('#exHeadL').textContent='Elegí la palabra';
-        $('#exBodyL').innerHTML=`Tocá cuál es ${GAME_WORDNAME[langGame]} en la frase. ${identHelp()}`;
+        $('#exBodyL').innerHTML = need>1
+          ? `Hay ${need} ${GAME_WORDNAME_PL[langGame]} en la frase. Marcalas todas. ${identHelp()}`
+          : `Tocá cuál es ${GAME_WORDNAME[langGame]} en la frase. ${identHelp()}`;
         $('#explainL').classList.remove('hidden');$('#checkL').classList.add('hidden');lEvaluated=false;return;
       }
+      // si faltan por marcar y todo lo marcado es correcto: no es fallo, solo pedir que complete
+      const correctSet=new Set(it.idx);
+      const allChosenCorrect=[...chosen].every(x=>correctSet.has(x));
+      if(need>1 && chosen.size<need && allChosenCorrect){
+        $('#phraseHint').textContent=`Vas bien: ${chosen.size}/${need}. Falta${need-chosen.size>1?'n':''} ${need-chosen.size}. Marcala${need-chosen.size>1?'s':''}.`;
+        // parpadeo suave para indicar que falta
+        document.querySelectorAll('#words .word.sel').forEach(x=>{x.classList.add('pulse');setTimeout(()=>x.classList.remove('pulse'),400);});
+        return;
+      }
       const took=(performance.now()-lQStart)/1000;
-      const ok=pickState.chosen===it.i;
+      // correcto solo si el conjunto elegido == conjunto correcto exacto
+      const ok = chosen.size===need && allChosenCorrect;
       record(typeToCat[langGame],ok);
-      // marcar visualmente
+      // marcar visualmente todas
       document.querySelectorAll('#words .word').forEach(x=>{
         const xi=parseInt(x.dataset.i,10);
-        if(xi===it.i)x.classList.add(ok?'ok':'should');
-        if(xi===pickState.chosen&&!ok)x.classList.add('err');
+        if(correctSet.has(xi)) x.classList.add(ok?'ok':'should');   // las correctas
+        if(chosen.has(xi)&&!correctSet.has(xi)) x.classList.add('err'); // las que marcó de más
       });
       lTotal+=1;lCorrect+=ok?1:0;
       lLog.push({label:it.w.join(' '),correct:ok?1:0,total:1,allOk:ok,took});
