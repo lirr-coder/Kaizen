@@ -532,6 +532,7 @@
         <div class="op" data-game="adjadv"><span class="sym">🎭</span><span class="lbl">Adj vs Adverbio</span></div>
         <div class="op" data-game="samew"><span class="sym">🔀</span><span class="lbl">La misma palabra</span></div>
         <div class="op" data-game="artpron"><span class="sym">⚖️</span><span class="lbl">Artículo / Pronombre</span></div>
+        <div class="op" data-game="prepconj"><span class="sym">🪢</span><span class="lbl">Prep vs Conjunción</span></div>
       </div>
       <div class="game-desc" id="gameDesc"></div>
       <div class="field">
@@ -635,6 +636,7 @@
     'L_verb_ae','L_verb_ic',                      // verbo: acción/estado, infinitivo/conjugado
     'L_adj_vs',                                   // adjetivo vs verbo
     'L_adj_adv',                                  // adjetivo vs adverbio
+    'L_prep_conj',                                // preposición vs conjunción
     'L_samew',                                    // la misma palabra cambia
     'L_artpron'                                   // artículo / pronombre
   ];
@@ -646,6 +648,7 @@
     L_verb_ae:{label:'Verbo: acc/estado'},L_verb_ic:{label:'Verbo: inf/conj'},
     L_adj_vs:{label:'Adj vs Verbo'},
     L_adj_adv:{label:'Adj vs Adverbio'},
+    L_prep_conj:{label:'Prep vs Conj'},
     L_samew:{label:'Misma palabra'},
     L_artpron:{label:'Art / Pron'}
   };
@@ -1606,6 +1609,32 @@
     {w:['El','niño','duerme','tranquilo'],i:3,answer:'adv'}
   ];
 
+  // ===== Preposición vs Conjunción: palabra marcada, ¿cuál de las dos es? =====
+  // Truco: tapá la palabra. Si de un lado queda un nombre colgando → preposición.
+  // Si los dos lados se sostienen solos → conjunción.
+  const PREPCONJ_BANK=[
+    {w:['Estudio','con','mi','hermano'],i:1,answer:'prep'},
+    {w:['Estudio','y','trabajo','mucho'],i:1,answer:'conj'},
+    {w:['El','regalo','es','para','ti'],i:3,answer:'prep'},
+    {w:['Quiero','ir','pero','no','puedo'],i:2,answer:'conj'},
+    {w:['Vengo','de','la','ciudad'],i:1,answer:'prep'},
+    {w:['No','fui','porque','llovía','mucho'],i:2,answer:'conj'},
+    {w:['El','gato','está','bajo','la','mesa'],i:3,answer:'prep'},
+    {w:['Es','pequeño','pero','muy','fuerte'],i:2,answer:'conj'},
+    {w:['Camino','hacia','el','parque'],i:1,answer:'prep'},
+    {w:['Trabajo','aunque','estoy','cansado'],i:1,answer:'conj'},
+    {w:['El','libro','es','sobre','historia'],i:3,answer:'prep'},
+    {w:['Comes','o','duermes','ahora'],i:1,answer:'conj'},
+    {w:['Salgo','sin','miedo','ninguno'],i:1,answer:'prep'},
+    {w:['Corrió','y','saltó','feliz'],i:1,answer:'conj'},
+    {w:['La','carta','es','de','ella'],i:3,answer:'prep'},
+    {w:['No','come','ni','duerme','bien'],i:2,answer:'conj'},
+    {w:['Viajo','hasta','la','montaña'],i:1,answer:'prep'},
+    {w:['Estudia','porque','quiere','graduarse'],i:1,answer:'conj'},
+    {w:['Lucho','contra','el','miedo'],i:1,answer:'prep'},
+    {w:['Canta','y','baila','muy','bien'],i:1,answer:'conj'}
+  ];
+
   // ===== La misma palabra en dos frases: decir la clase en cada una =====
   // {word, a:{w,i,cls}, b:{w,i,cls}} — cls es una de LANG_TYPES
   const SAMEW_BANK=[
@@ -1663,12 +1692,13 @@
     prep:'Tocá cuál palabra es la preposición (arrastra un nombre detrás: a, de, con, para…).',
     conj:'Tocá cuál palabra es la conjunción (une dos cosas del mismo nivel: y, o, pero, porque…).',
     samew:'La misma palabra en dos frases distintas. Decí qué clase es en cada una — cambia según a quién señale.',
-    artpron:'La misma palabra (el/él, la, lo, las). ¿Artículo o pronombre? Si acompaña a un nombre es artículo; si está sola reemplazándolo, es pronombre.'
+    artpron:'La misma palabra (el/él, la, lo, las). ¿Artículo o pronombre? Si acompaña a un nombre es artículo; si está sola reemplazándolo, es pronombre.',
+    prepconj:'Palabra marcada: ¿es preposición o conjunción? Tapala y mirá los dos lados: si queda un nombre colgando es preposición; si ambos lados se sostienen solos es conjunción.'
   };
   const IDENT_GAMES=['adv','pron','prep','conj'];  // juegos de identificación pura (sin subtipos)
   function renderGameDesc(){
     if(selGames.has('mixbasic')){ $('#gameDesc').textContent=GAME_DESC.mixbasic; return; }
-    const names={art:'Artículos',sust:'Sustantivos',adj:'Adj vs Verbo',adjadv:'Adj vs Adverbio',verb:'Verbos',adv:'Adverbios',pron:'Pronombres',prep:'Preposiciones',conj:'Conjunciones',samew:'La misma palabra',artpron:'Artículo/Pronombre'};
+    const names={art:'Artículos',sust:'Sustantivos',adj:'Adj vs Verbo',adjadv:'Adj vs Adverbio',verb:'Verbos',adv:'Adverbios',pron:'Pronombres',prep:'Preposiciones',conj:'Conjunciones',samew:'La misma palabra',artpron:'Artículo/Pronombre',prepconj:'Prep vs Conjunción'};
     const sel=[...selGames].map(g=>names[g]);
     $('#gameDesc').textContent = sel.length===1 ? GAME_DESC[[...selGames][0]] : `Mezcla: ${sel.join(', ')}. Cada ejercicio es de uno de estos tipos.`;
   }
@@ -1700,7 +1730,7 @@
   let pickState={};
   let placement={},selectedWord=null;
 
-  const BANK_OF={art:()=>ART_BANK,sust:()=>SUST_BANK,verb:()=>VERB_BANK,adj:()=>ADJV_BANK,adv:()=>ADV_BANK,pron:()=>PRON_BANK,prep:()=>PREP_BANK,conj:()=>CONJ_BANK,adjadv:()=>ADJADV_BANK,samew:()=>SAMEW_BANK,artpron:()=>ARTPRON_BANK};
+  const BANK_OF={art:()=>ART_BANK,sust:()=>SUST_BANK,verb:()=>VERB_BANK,adj:()=>ADJV_BANK,adv:()=>ADV_BANK,pron:()=>PRON_BANK,prep:()=>PREP_BANK,conj:()=>CONJ_BANK,adjadv:()=>ADJADV_BANK,samew:()=>SAMEW_BANK,artpron:()=>ARTPRON_BANK,prepconj:()=>PREPCONJ_BANK};
 
   function startLang(){
     lIdx=0;lLog=[];lCorrect=0;lTotal=0;
@@ -1795,6 +1825,11 @@
         {key:'aa',label:'¿Adjetivo o adverbio?',cat:'L_adj_adv',opts:[['adj','Adjetivo'],['adv','Adverbio']],correct:it.answer}
       ];
     }
+    if(langGame==='prepconj'){
+      return [
+        {key:'pc',label:'¿Preposición o conjunción?',cat:'L_prep_conj',opts:[['prep','Preposición'],['conj','Conjunción']],correct:it.answer}
+      ];
+    }
     return [];
   }
   const GAME_WORDNAME={art:'el artículo',sust:'el sustantivo',adj:null,verb:'el verbo',adv:'el adverbio',pron:'el pronombre',prep:'la preposición',conj:'la conjunción'};
@@ -1809,13 +1844,15 @@
       wc.appendChild(el);
     });
     $('#rows').innerHTML='';
-    if(langGame==='adj' || langGame==='adjadv'){
+    if(langGame==='adj' || langGame==='adjadv' || langGame==='prepconj'){
       // la palabra ya viene marcada (no hay "elegir cuál"), muestra la pregunta directo
       wordChosen=true;
       markTargetWord();
       $('#phraseHint').textContent = langGame==='adj'
         ? '¿La palabra marcada es adjetivo o verbo?'
-        : '¿La palabra marcada es adjetivo o adverbio?';
+        : langGame==='adjadv'
+          ? '¿La palabra marcada es adjetivo o adverbio?'
+          : '¿La palabra marcada es preposición o conjunción?';
       renderPickRows();
     }else if(IDENT_GAMES.includes(langGame)){
       // identificación pura: tocar la(s) palabra(s) de esa clase, sin subtipos
@@ -1875,7 +1912,7 @@
       return;
     }
     // juegos art/sust/verb: fase de elegir la palabra
-    if(langGame==='adj'||langGame==='adjadv')return;   // palabra ya marcada, no se elige
+    if(langGame==='adj'||langGame==='adjadv'||langGame==='prepconj')return;   // palabra ya marcada, no se elige
     if(IDENT_GAMES.includes(langGame)){
       // identificación pura: se pueden marcar varias palabras (toggle). Evalúa en Revisar.
       if(!pickState.chosen) pickState.chosen=new Set();
@@ -2035,7 +2072,7 @@
       return;
     }
     // en art/sust/verb hay que haber elegido la palabra primero
-    if(langGame!=='adj' && langGame!=='adjadv' && !wordChosen){
+    if(langGame!=='adj' && langGame!=='adjadv' && langGame!=='prepconj' && !wordChosen){
       $('#exHeadL').textContent='Elegí la palabra';
       $('#exBodyL').innerHTML=`Primero tocá cuál es ${GAME_WORDNAME[langGame]} en la frase. ${wordPickHelp()}`;
       $('#explainL').classList.remove('hidden');$('#checkL').classList.add('hidden');lEvaluated=false;return;
@@ -2081,7 +2118,8 @@
       ae:`"${word}" es <b>${val(r.correct)}</b>. Acción = hace algo; estado = cómo está (ser, estar, parecer).`,
       ic:`"${word}" es <b>${val(r.correct)}</b>. Probá con "yo": "yo ${word}" suena bien = conjugado; suena roto = infinitivo.`,
       av:`"${word}" es <b>${val(r.correct)}</b>. Prueba del tiempo: si le cambiás el tiempo (era, será) es verbo; si no, es adjetivo.`,
-      aa:`"${word}" es <b>${val(r.correct)}</b>. Mirá a quién señala: si está pegado a un sustantivo (cosa) es adjetivo; si está pegado a un verbo (acción) es adverbio. El adjetivo cambia de género (claro/clara), el adverbio queda congelado.`
+      aa:`"${word}" es <b>${val(r.correct)}</b>. Mirá a quién señala: si está pegado a un sustantivo (cosa) es adjetivo; si está pegado a un verbo (acción) es adverbio. El adjetivo cambia de género (claro/clara), el adverbio queda congelado.`,
+      pc:`"${word}" es <b>${r.correct==='prep'?'preposición':'conjunción'}</b>. Tapá la palabra y mirá los dos lados: si de un lado queda un nombre colgando (${word} + algo) es preposición; si los dos lados se sostienen solos (dos frases o dos palabras al mismo nivel) es conjunción.`
     };
     return reasons[r.key]||`Era ${val(r.correct)}.`;
   }
