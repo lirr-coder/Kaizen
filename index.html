@@ -147,6 +147,10 @@
   .word.should{border-color:var(--right);border-style:dashed}
   .word.pulse{animation:pulseSel .4s}
   @keyframes pulseSel{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+  /* juegos de pares */
+  .pair-block{margin-bottom:18px;padding:14px;background:var(--panel-2);border:1px solid var(--line);border-radius:14px}
+  .pair-phrase{font-size:20px;font-weight:600;margin-bottom:12px;text-align:center;color:var(--ink)}
+  .pair-phrase .kw{background:var(--accent);color:#fff;padding:2px 10px;border-radius:8px;font-weight:800}
   .boxes{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:4px}
   .box{background:var(--panel);border:1.5px dashed var(--line);border-radius:12px;padding:12px;min-height:74px;transition:.12s}
   .box.hot{border-color:var(--accent);background:#eef0fc}
@@ -519,12 +523,15 @@
         <div class="op on" data-game="mixbasic"><span class="sym">🔤</span><span class="lbl">Mixto</span></div>
         <div class="op" data-game="art"><span class="sym">🔖</span><span class="lbl">Artículos</span></div>
         <div class="op" data-game="sust"><span class="sym">📦</span><span class="lbl">Sustantivos</span></div>
-        <div class="op" data-game="adj"><span class="sym">🎨</span><span class="lbl">Adjetivos</span></div>
         <div class="op" data-game="verb"><span class="sym">⚡</span><span class="lbl">Verbos</span></div>
         <div class="op" data-game="adv"><span class="sym">🏃</span><span class="lbl">Adverbios</span></div>
         <div class="op" data-game="pron"><span class="sym">🔁</span><span class="lbl">Pronombres</span></div>
         <div class="op" data-game="prep"><span class="sym">🔗</span><span class="lbl">Preposiciones</span></div>
         <div class="op" data-game="conj"><span class="sym">➕</span><span class="lbl">Conjunciones</span></div>
+        <div class="op" data-game="adj"><span class="sym">🎨</span><span class="lbl">Adj vs Verbo</span></div>
+        <div class="op" data-game="adjadv"><span class="sym">🎭</span><span class="lbl">Adj vs Adverbio</span></div>
+        <div class="op" data-game="samew"><span class="sym">🔀</span><span class="lbl">La misma palabra</span></div>
+        <div class="op" data-game="artpron"><span class="sym">⚖️</span><span class="lbl">Artículo / Pronombre</span></div>
       </div>
       <div class="game-desc" id="gameDesc"></div>
       <div class="field">
@@ -626,7 +633,10 @@
     'L_art_def','L_art_conc',                    // artículo: definido/indef, concordancia
     'L_sust_cp','L_sust_ca',                      // sustantivo: común/propio, concreto/abstracto
     'L_verb_ae','L_verb_ic',                      // verbo: acción/estado, infinitivo/conjugado
-    'L_adj_vs'                                    // adjetivo vs verbo
+    'L_adj_vs',                                   // adjetivo vs verbo
+    'L_adj_adv',                                  // adjetivo vs adverbio
+    'L_samew',                                    // la misma palabra cambia
+    'L_artpron'                                   // artículo / pronombre
   ];
   const CAT_LANG_INFO={
     L_sust:{label:'Sustantivo'},L_adj:{label:'Adjetivo'},L_art:{label:'Artículo'},L_verb:{label:'Verbo'},
@@ -634,13 +644,16 @@
     L_art_def:{label:'Art: def/indef'},L_art_conc:{label:'Art: concord.'},
     L_sust_cp:{label:'Sust: común/propio'},L_sust_ca:{label:'Sust: concr/abstr'},
     L_verb_ae:{label:'Verbo: acc/estado'},L_verb_ic:{label:'Verbo: inf/conj'},
-    L_adj_vs:{label:'Adj vs Verbo'}
+    L_adj_vs:{label:'Adj vs Verbo'},
+    L_adj_adv:{label:'Adj vs Adverbio'},
+    L_samew:{label:'Misma palabra'},
+    L_artpron:{label:'Art / Pron'}
   };
   const typeToCat={sust:'L_sust',adj:'L_adj',art:'L_art',verb:'L_verb',adv:'L_adv',pron:'L_pron',prep:'L_prep',conj:'L_conj'};
   const CATS=[...CATS_MENTAL,...CATS_NEG,...CATS_FRAC,...CATS_LANG];
   function catOf(op,val){return op+val;}
 
-  const KEY='practicaMental_v13';
+  const KEY='practicaMental_v14';
   function blankCats(){const o={};CATS.forEach(c=>o[c]=0);return o;}
   function blankData(){return {streak:blankCats(),best:blankCats(),total:blankCats(),days:{}};}
   function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(!d||!d.streak)return blankData();
@@ -1362,7 +1375,26 @@
     [['Él','pron'],['corre','verb'],['muy','adv'],['rápido','adv']],
     [['Trabajo','verb'],['aunque','conj'],['estoy','verb'],['cansado','adj']],
     [['El','art'],['perro','sust'],['duerme','verb'],['siempre','adv'],['aquí','adv']],
-    [['Vengo','verb'],['de','prep'],['Venezuela','sust']]
+    [['Vengo','verb'],['de','prep'],['Venezuela','sust']],
+    // ===== más frases con pronombres, preposiciones y conjunciones para el mixto =====
+    [['Ella','pron'],['vive','verb'],['con','prep'],['nosotros','pron']],
+    [['Yo','pron'],['estudio','verb'],['pero','conj'],['tú','pron'],['descansas','verb']],
+    [['El','art'],['libro','sust'],['es','verb'],['para','prep'],['ti','pron']],
+    [['Nosotros','pron'],['vamos','verb'],['a','prep'],['la','art'],['playa','sust']],
+    [['Ella','pron'],['canta','verb'],['y','conj'],['él','pron'],['baila','verb']],
+    [['Trabajo','verb'],['con','prep'],['ellos','pron'],['aunque','conj'],['es','verb'],['difícil','adj']],
+    [['Esto','pron'],['es','verb'],['para','prep'],['mi','otra'],['hermano','sust']],
+    [['Fui','verb'],['a','prep'],['la','art'],['tienda','sust'],['porque','conj'],['necesitaba','verb'],['pan','sust']],
+    [['Él','pron'],['llegó','verb'],['sin','prep'],['dinero','sust'],['ni','conj'],['comida','sust']],
+    [['Te','pron'],['espero','verb'],['en','prep'],['el','art'],['parque','sust']],
+    [['Nosotros','pron'],['ganamos','verb'],['pero','conj'],['ellos','pron'],['jugaron','verb'],['bien','adv']],
+    [['La','art'],['carta','sust'],['es','verb'],['de','prep'],['ella','pron']],
+    [['Corro','verb'],['por','prep'],['el','art'],['parque','sust'],['cada','otra'],['mañana','sust']],
+    [['Lo','pron'],['hice','verb'],['por','prep'],['ti','pron'],['y','conj'],['por','prep'],['ellos','pron']],
+    [['Voy','verb'],['con','prep'],['ella','pron'],['aunque','conj'],['llueva','verb']],
+    [['El','art'],['regalo','sust'],['es','verb'],['tuyo','pron'],['no','adv'],['mío','pron']],
+    [['Salgo','verb'],['de','prep'],['casa','sust'],['porque','conj'],['es','verb'],['tarde','adv']],
+    [['Ella','pron'],['me','pron'],['lo','pron'],['dio','verb'],['ayer','adv']]
   ];
 
   // ===== Bancos con subtipos =====
@@ -1549,6 +1581,66 @@
     {w:['Puedes','quedarte','o','venir','con','nosotros'],idx:[2]}
   ];
 
+  // ===== Adjetivo vs Adverbio: misma palabra según a quién modifica =====
+  // frase, i=índice de la palabra marcada, answer:'adj'|'adv'
+  const ADJADV_BANK=[
+    {w:['El','mensaje','es','claro'],i:3,answer:'adj'},
+    {w:['El','profesor','habla','claro'],i:3,answer:'adv'},
+    {w:['Ese','carro','es','rápido'],i:3,answer:'adj'},
+    {w:['Ese','carro','corre','rápido'],i:3,answer:'adv'},
+    {w:['La','tarea','está','fácil'],i:3,answer:'adj'},
+    {w:['Resolvió','la','tarea','fácil'],i:3,answer:'adv'},
+    {w:['El','trabajo','quedó','perfecto'],i:3,answer:'adj'},
+    {w:['El','equipo','jugó','perfecto'],i:3,answer:'adv'},
+    {w:['Tu','letra','es','bonita'],i:3,answer:'adj'},
+    {w:['Ella','canta','muy','bonito'],i:3,answer:'adv'},
+    {w:['El','golpe','fue','duro'],i:3,answer:'adj'},
+    {w:['El','equipo','entrena','duro'],i:3,answer:'adv'},
+    {w:['La','voz','suena','alto'],i:3,answer:'adv'},
+    {w:['Ese','edificio','es','alto'],i:3,answer:'adj'},
+    {w:['El','pan','está','rico'],i:3,answer:'adj'},
+    {w:['La','abuela','cocina','rico'],i:3,answer:'adv'},
+    {w:['El','camino','fue','directo'],i:3,answer:'adj'},
+    {w:['Fuimos','al','grano','directo'],i:3,answer:'adv'},
+    {w:['El','niño','está','tranquilo'],i:3,answer:'adj'},
+    {w:['El','niño','duerme','tranquilo'],i:3,answer:'adv'}
+  ];
+
+  // ===== La misma palabra en dos frases: decir la clase en cada una =====
+  // {word, a:{w,i,cls}, b:{w,i,cls}} — cls es una de LANG_TYPES
+  const SAMEW_BANK=[
+    {word:'tarde',a:{w:['El','tren','llegó','tarde'],i:3,cls:'adv'},b:{w:['Estudio','cada','tarde','tranquilo'],i:2,cls:'sust'}},
+    {word:'bajo',a:{w:['El','gato','duerme','bajo','la','mesa'],i:3,cls:'prep'},b:{w:['Ese','hombre','es','muy','bajo'],i:4,cls:'adj'}},
+    {word:'claro',a:{w:['El','profesor','habla','claro'],i:3,cls:'adv'},b:{w:['El','mensaje','es','muy','claro'],i:4,cls:'adj'}},
+    {word:'sobre',a:{w:['El','libro','está','sobre','la','mesa'],i:3,cls:'prep'},b:{w:['Llegó','un','sobre','sin','remitente'],i:2,cls:'sust'}},
+    {word:'como',a:{w:['Lo','hago','como','puedo'],i:2,cls:'conj'},b:{w:['Yo','como','pan','en','casa'],i:1,cls:'verb'}},
+    {word:'nada',a:{w:['Ella','nada','en','la','piscina'],i:1,cls:'verb'},b:{w:['No','tengo','nada','en','casa'],i:2,cls:'pron'}},
+    {word:'vino',a:{w:['El','vino','está','frío'],i:1,cls:'sust'},b:{w:['Ayer','vino','tarde','a','casa'],i:1,cls:'verb'}},
+    {word:'rápido',a:{w:['El','carro','es','rápido'],i:3,cls:'adj'},b:{w:['El','carro','corre','rápido'],i:3,cls:'adv'}},
+    {word:'mañana',a:{w:['Te','veo','mañana','temprano'],i:2,cls:'adv'},b:{w:['La','mañana','está','fría'],i:1,cls:'sust'}},
+    {word:'duro',a:{w:['El','pan','está','duro'],i:3,cls:'adj'},b:{w:['El','equipo','entrena','duro'],i:3,cls:'adv'}},
+    {word:'que',a:{w:['Sé','que','vendrás','mañana'],i:1,cls:'conj'},b:{w:['El','libro','que','leí'],i:2,cls:'pron'}},
+    {word:'para',a:{w:['El','regalo','es','para','ti'],i:3,cls:'prep'},b:{w:['El','carro','para','en','seco'],i:2,cls:'verb'}},
+    {word:'bien',a:{w:['El','niño','canta','bien'],i:3,cls:'adv'},b:{w:['El','bien','vence','al','mal'],i:1,cls:'sust'}},
+    {word:'alto',a:{w:['Ese','árbol','es','alto'],i:3,cls:'adj'},b:{w:['La','música','suena','alto'],i:3,cls:'adv'}},
+    {word:'rico',a:{w:['El','postre','está','rico'],i:3,cls:'adj'},b:{w:['La','abuela','cocina','rico'],i:3,cls:'adv'}}
+  ];
+
+  // ===== Artículo / Pronombre: el/él, la, lo, las según contexto =====
+  // {word, a:{w,i,cls}, b:{w,i,cls}} con cls 'art' o 'pron'
+  const ARTPRON_BANK=[
+    {word:'el/él',a:{w:['El','carro','es','nuevo'],i:0,cls:'art'},b:{w:['Él','llegó','muy','tarde'],i:0,cls:'pron'}},
+    {word:'la',a:{w:['La','casa','es','grande'],i:0,cls:'art'},b:{w:['Ayer','la','vi','contenta'],i:1,cls:'pron'}},
+    {word:'lo',a:{w:['Lo','bueno','dura','poco'],i:0,cls:'art'},b:{w:['Mi','hermano','lo','trajo'],i:2,cls:'pron'}},
+    {word:'las',a:{w:['Las','flores','son','rojas'],i:0,cls:'art'},b:{w:['Yo','las','compré','ayer'],i:1,cls:'pron'}},
+    {word:'el/él',a:{w:['El','perro','ladra','fuerte'],i:0,cls:'art'},b:{w:['Él','estudia','todos','los','días'],i:0,cls:'pron'}},
+    {word:'la',a:{w:['La','profesora','explicó','bien'],i:0,cls:'art'},b:{w:['El','maestro','la','felicitó'],i:2,cls:'pron'}},
+    {word:'los',a:{w:['Los','niños','juegan','afuera'],i:0,cls:'art'},b:{w:['Ella','los','saludó','ayer'],i:1,cls:'pron'}},
+    {word:'lo',a:{w:['Lo','difícil','ya','pasó'],i:0,cls:'art'},b:{w:['Nosotros','lo','hicimos','juntos'],i:1,cls:'pron'}},
+    {word:'la',a:{w:['La','montaña','es','enorme'],i:0,cls:'art'},b:{w:['Te','la','presté','anoche'],i:1,cls:'pron'}},
+    {word:'el/él',a:{w:['El','libro','es','viejo'],i:0,cls:'art'},b:{w:['Él','es','mi','hermano'],i:0,cls:'pron'}}
+  ];
+
   // Para eso necesito subtipos en PHRASES; los infiero con un mapa de palabras conocidas.
   const SUB_MAP={
     // artículos
@@ -1564,16 +1656,19 @@
     art:'Una frase con un artículo. Elegís cuál es, y decís si es definido/indefinido y su concordancia.',
     sust:'Un sustantivo. Elegís cuál es, y decís si es común/propio y concreto/abstracto.',
     adj:'Palabra marcada: ¿es adjetivo o verbo? Usá la prueba del tiempo.',
+    adjadv:'Palabra marcada: ¿es adjetivo o adverbio? Mirá a quién señala: a un sustantivo (adjetivo) o a un verbo (adverbio).',
     verb:'Un verbo. Elegís cuál es, y decís si es acción/estado e infinitivo/conjugado.',
     adv:'Tocá cuál palabra es el adverbio (modifica al verbo: cómo, cuándo, dónde, cuánto).',
     pron:'Tocá cuál palabra es el pronombre (reemplaza a un nombre: yo, él, esto…).',
     prep:'Tocá cuál palabra es la preposición (arrastra un nombre detrás: a, de, con, para…).',
-    conj:'Tocá cuál palabra es la conjunción (une dos cosas del mismo nivel: y, o, pero, porque…).'
+    conj:'Tocá cuál palabra es la conjunción (une dos cosas del mismo nivel: y, o, pero, porque…).',
+    samew:'La misma palabra en dos frases distintas. Decí qué clase es en cada una — cambia según a quién señale.',
+    artpron:'La misma palabra (el/él, la, lo, las). ¿Artículo o pronombre? Si acompaña a un nombre es artículo; si está sola reemplazándolo, es pronombre.'
   };
   const IDENT_GAMES=['adv','pron','prep','conj'];  // juegos de identificación pura (sin subtipos)
   function renderGameDesc(){
     if(selGames.has('mixbasic')){ $('#gameDesc').textContent=GAME_DESC.mixbasic; return; }
-    const names={art:'Artículos',sust:'Sustantivos',adj:'Adjetivos',verb:'Verbos',adv:'Adverbios',pron:'Pronombres',prep:'Preposiciones',conj:'Conjunciones'};
+    const names={art:'Artículos',sust:'Sustantivos',adj:'Adj vs Verbo',adjadv:'Adj vs Adverbio',verb:'Verbos',adv:'Adverbios',pron:'Pronombres',prep:'Preposiciones',conj:'Conjunciones',samew:'La misma palabra',artpron:'Artículo/Pronombre'};
     const sel=[...selGames].map(g=>names[g]);
     $('#gameDesc').textContent = sel.length===1 ? GAME_DESC[[...selGames][0]] : `Mezcla: ${sel.join(', ')}. Cada ejercicio es de uno de estos tipos.`;
   }
@@ -1605,7 +1700,7 @@
   let pickState={};
   let placement={},selectedWord=null;
 
-  const BANK_OF={art:()=>ART_BANK,sust:()=>SUST_BANK,verb:()=>VERB_BANK,adj:()=>ADJV_BANK,adv:()=>ADV_BANK,pron:()=>PRON_BANK,prep:()=>PREP_BANK,conj:()=>CONJ_BANK};
+  const BANK_OF={art:()=>ART_BANK,sust:()=>SUST_BANK,verb:()=>VERB_BANK,adj:()=>ADJV_BANK,adv:()=>ADV_BANK,pron:()=>PRON_BANK,prep:()=>PREP_BANK,conj:()=>CONJ_BANK,adjadv:()=>ADJADV_BANK,samew:()=>SAMEW_BANK,artpron:()=>ARTPRON_BANK};
 
   function startLang(){
     lIdx=0;lLog=[];lCorrect=0;lTotal=0;
@@ -1642,6 +1737,7 @@
     $('#checkL').classList.remove('hidden');
     lEvaluated=false;
     if(langGame==='mixbasic'){ showMixBasic(); }
+    else if(langGame==='samew'||langGame==='artpron'){ showPair(); }
     else { showPicks(); }
     lQStart=performance.now();
   }
@@ -1694,6 +1790,11 @@
         {key:'av',label:'¿Adjetivo o verbo?',cat:'L_adj_vs',opts:[['adj','Adjetivo'],['verb','Verbo']],correct:it.answer}
       ];
     }
+    if(langGame==='adjadv'){
+      return [
+        {key:'aa',label:'¿Adjetivo o adverbio?',cat:'L_adj_adv',opts:[['adj','Adjetivo'],['adv','Adverbio']],correct:it.answer}
+      ];
+    }
     return [];
   }
   const GAME_WORDNAME={art:'el artículo',sust:'el sustantivo',adj:null,verb:'el verbo',adv:'el adverbio',pron:'el pronombre',prep:'la preposición',conj:'la conjunción'};
@@ -1708,11 +1809,13 @@
       wc.appendChild(el);
     });
     $('#rows').innerHTML='';
-    if(langGame==='adj'){
-      // adjetivo: la palabra ya viene marcada (no hay "elegir cuál"), muestra subtipos directo
+    if(langGame==='adj' || langGame==='adjadv'){
+      // la palabra ya viene marcada (no hay "elegir cuál"), muestra la pregunta directo
       wordChosen=true;
       markTargetWord();
-      $('#phraseHint').textContent='¿La palabra marcada es adjetivo o verbo?';
+      $('#phraseHint').textContent = langGame==='adj'
+        ? '¿La palabra marcada es adjetivo o verbo?'
+        : '¿La palabra marcada es adjetivo o adverbio?';
       renderPickRows();
     }else if(IDENT_GAMES.includes(langGame)){
       // identificación pura: tocar la(s) palabra(s) de esa clase, sin subtipos
@@ -1772,7 +1875,7 @@
       return;
     }
     // juegos art/sust/verb: fase de elegir la palabra
-    if(langGame==='adj')return;          // adj no elige palabra
+    if(langGame==='adj'||langGame==='adjadv')return;   // palabra ya marcada, no se elige
     if(IDENT_GAMES.includes(langGame)){
       // identificación pura: se pueden marcar varias palabras (toggle). Evalúa en Revisar.
       if(!pickState.chosen) pickState.chosen=new Set();
@@ -1893,6 +1996,8 @@
   }
 
   function checkPicks(){
+    // juegos de pares (misma palabra / artículo-pronombre)
+    if(langGame==='samew'||langGame==='artpron'){ checkPair(); return; }
     // juegos de identificación pura: comparar el conjunto elegido contra it.idx
     if(IDENT_GAMES.includes(langGame)){
       const it=lItems[lIdx].it;
@@ -1930,7 +2035,7 @@
       return;
     }
     // en art/sust/verb hay que haber elegido la palabra primero
-    if(langGame!=='adj' && !wordChosen){
+    if(langGame!=='adj' && langGame!=='adjadv' && !wordChosen){
       $('#exHeadL').textContent='Elegí la palabra';
       $('#exBodyL').innerHTML=`Primero tocá cuál es ${GAME_WORDNAME[langGame]} en la frase. ${wordPickHelp()}`;
       $('#explainL').classList.remove('hidden');$('#checkL').classList.add('hidden');lEvaluated=false;return;
@@ -1966,7 +2071,7 @@
   function explainPick(r){
     const it=lItems[lIdx].it;
     const word=it.w[it.i];
-    const val=v=>({def:'definido',indef:'indefinido',m:'masculino',f:'femenino',s:'singular',p:'plural',comun:'común',propio:'propio',concreto:'concreto',abstracto:'abstracto',accion:'acción',estado:'estado',inf:'infinitivo',conj:'conjugado',adj:'adjetivo',verb:'verbo'}[v]||v);
+    const val=v=>({def:'definido',indef:'indefinido',m:'masculino',f:'femenino',s:'singular',p:'plural',comun:'común',propio:'propio',concreto:'concreto',abstracto:'abstracto',accion:'acción',estado:'estado',inf:'infinitivo',conj:'conjugado',adj:'adjetivo',verb:'verbo',adv:'adverbio'}[v]||v);
     const reasons={
       def:`"${word}" es <b>${val(r.correct)}</b>. Definido (el, la, los, las) = algo específico; indefinido (un, una, unos, unas) = uno cualquiera.`,
       gen:`"${word}" es <b>${val(r.correct)}</b> por el sustantivo al que acompaña.`,
@@ -1975,12 +2080,72 @@
       ca:`"${word}" es <b>${val(r.correct)}</b>. Concreto = lo podés tocar; abstracto = existe pero no lo agarrás.`,
       ae:`"${word}" es <b>${val(r.correct)}</b>. Acción = hace algo; estado = cómo está (ser, estar, parecer).`,
       ic:`"${word}" es <b>${val(r.correct)}</b>. Probá con "yo": "yo ${word}" suena bien = conjugado; suena roto = infinitivo.`,
-      av:`"${word}" es <b>${val(r.correct)}</b>. Prueba del tiempo: si le cambiás el tiempo (era, será) es verbo; si no, es adjetivo.`
+      av:`"${word}" es <b>${val(r.correct)}</b>. Prueba del tiempo: si le cambiás el tiempo (era, será) es verbo; si no, es adjetivo.`,
+      aa:`"${word}" es <b>${val(r.correct)}</b>. Mirá a quién señala: si está pegado a un sustantivo (cosa) es adjetivo; si está pegado a un verbo (acción) es adverbio. El adjetivo cambia de género (claro/clara), el adverbio queda congelado.`
     };
     return reasons[r.key]||`Era ${val(r.correct)}.`;
   }
   function whyType(type){
     return ({sust:'Es el nombre de una cosa, persona o idea.',adj:'Dice cómo es algo.',art:'Va antes del sustantivo (el, la, un, una).',verb:'Es acción o estado.',adv:'Modifica al verbo: cómo/cuándo/dónde/cuánto (no cambia de género).',pron:'Reemplaza a un nombre (yo, él, esto, lo).',prep:'Arrastra un nombre detrás (a, de, con, para).',conj:'Une dos cosas del mismo nivel (y, o, pero, porque).',otra:'Es un posesivo o demostrativo que acompaña (mi, su, esta, ese).'})[type]||'';
+  }
+
+  // ---------- JUEGOS DE PARES (la misma palabra / artículo-pronombre) ----------
+  const PAIR_OPTS_ARTPRON=[['art','Artículo'],['pron','Pronombre']];
+  const PAIR_OPTS_SAMEW=[['sust','Sustantivo'],['adj','Adjetivo'],['verb','Verbo'],['adv','Adverbio'],['pron','Pronombre'],['prep','Preposición'],['conj','Conjunción']];
+  function showPair(){
+    const it=lItems[lIdx].it;
+    pickState={};
+    $('#phraseHint').innerHTML=`La palabra <b>"${it.word}"</b> aparece en las dos frases. Decí qué es en cada una.`;
+    $('#words').innerHTML='';
+    const opts = langGame==='artpron' ? PAIR_OPTS_ARTPRON : PAIR_OPTS_SAMEW;
+    const rows=$('#rows');rows.innerHTML='';
+    ['a','b'].forEach(side=>{
+      const fr=it[side];
+      const phraseHTML=fr.w.map((w,i)=>i===fr.i?`<span class="kw">${w}</span>`:w).join(' ');
+      const cls = opts.length<=2?'c2':opts.length===3?'c3':'c4';
+      const wrap=document.createElement('div');
+      wrap.className='pair-block';
+      wrap.innerHTML=`<div class="pair-phrase">${phraseHTML}</div><div class="row-boxes ${cls}" data-row="${side}"></div>`;
+      rows.appendChild(wrap);
+      const rb=wrap.querySelector('.row-boxes');
+      opts.forEach(([val,lbl])=>{
+        const p=document.createElement('div');p.className='pick';p.dataset.val=val;p.dataset.row=side;p.textContent=lbl;
+        rb.appendChild(p);
+      });
+    });
+    $('#checkL').textContent='Revisar';
+  }
+  function checkPair(){
+    const it=lItems[lIdx].it;
+    const cat = langGame==='artpron' ? 'L_artpron' : 'L_samew';
+    if(pickState.a==null||pickState.b==null){
+      $('#exHeadL').textContent='Falta responder';
+      $('#exBodyL').innerHTML='Elegí la clase en las dos frases.';
+      $('#explainL').classList.remove('hidden');$('#checkL').classList.add('hidden');lEvaluated=false;return;
+    }
+    const took=(performance.now()-lQStart)/1000;
+    let correctCount=0,errs=[];
+    ['a','b'].forEach(side=>{
+      const correct=it[side].cls;
+      const ok=pickState[side]===correct;
+      if(ok)correctCount++;
+      record(cat,ok);
+      const rb=$(`#rows .row-boxes[data-row="${side}"]`);
+      rb.querySelectorAll('.pick').forEach(p=>{
+        if(p.dataset.val===correct)p.classList.add(ok?'ok':'should');
+        if(p.dataset.val===pickState[side]&&!ok)p.classList.add('err');
+      });
+      if(!ok)errs.push(explainPair(it[side]));
+    });
+    lTotal+=2;lCorrect+=correctCount;
+    const allOk=correctCount===2;
+    lLog.push({label:it.word,correct:correctCount,total:2,allOk,took});
+    finishItem(allOk,errs);
+  }
+  function explainPair(sideObj){
+    const w=sideObj.w[sideObj.i];
+    const name={sust:'sustantivo',adj:'adjetivo',verb:'verbo',adv:'adverbio',pron:'pronombre',prep:'preposición',conj:'conjunción',art:'artículo'}[sideObj.cls];
+    return `En "${sideObj.w.join(' ')}", <b>${w}</b> es ${name}. ${whyType(sideObj.cls)}`;
   }
 
   function finishItem(allOk,errLines){
