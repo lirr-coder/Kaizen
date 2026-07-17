@@ -39,6 +39,7 @@
   .quick{display:flex;gap:8px;margin-top:10px}
   .quick button{flex:1;background:var(--panel-2);border:1px solid var(--line);color:var(--ink-dim);border-radius:9px;padding:8px;font-family:var(--num);font-size:14px;cursor:pointer}
   .quick button:active{background:#e3e7ef;color:var(--ink)}
+  .quick button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
   .cfg{display:none}
   .cfg.show{display:block}
   .seg{display:flex;gap:8px;flex-wrap:wrap}
@@ -179,8 +180,10 @@
   .pick.should{border-color:var(--right);border-style:dashed}
   .hidden{display:none}
   /* entrada de fracción */
-  .frac-input{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:4px}
+  .frac-input{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:12px;margin-top:4px}
+  .frac-stack{display:flex;flex-direction:column;align-items:center;gap:6px}
   .fin{width:140px;background:var(--panel-2);border:2px solid var(--line);border-radius:12px;color:var(--ink);text-align:center;font-family:var(--num);font-size:30px;font-weight:700;padding:10px}
+  .fin-whole{width:90px;align-self:center}
   .fin:focus{outline:none}
   .fin.active{border-color:var(--accent);background:#eef0fc}
   .fin.bad{border-color:var(--wrong);animation:shake .3s}
@@ -386,6 +389,17 @@
       </div>
       <div class="game-desc" id="fracDesc"></div>
       <div class="field">
+        <label>¿Cuántas fracciones por operación?</label>
+        <div class="quick" id="fracNPick">
+          <button data-nmin="2" data-nmax="2" class="on">2</button>
+          <button data-nmin="3" data-nmax="3">3</button>
+          <button data-nmin="4" data-nmax="4">4</button>
+          <button data-nmin="5" data-nmax="5">5</button>
+          <button data-nmin="6" data-nmax="6">6</button>
+          <button data-nmin="2" data-nmax="6">2–6 mezcla</button>
+        </div>
+      </div>
+      <div class="field">
         <label>¿Cuántos ejercicios?</label>
         <div class="stepper">
           <button id="minusF">−</button>
@@ -440,9 +454,12 @@
       <div class="q" id="qTextF">— + —</div>
     </div>
     <div class="frac-input" id="fracInput">
-      <input class="fin fin-num" id="fNum" inputmode="numeric" placeholder="?" readonly>
-      <div class="fin-bar"></div>
-      <input class="fin fin-den" id="fDen" inputmode="numeric" placeholder="?" readonly>
+      <input class="fin fin-whole hidden" id="fWhole" inputmode="numeric" placeholder="?" readonly>
+      <div class="frac-stack">
+        <input class="fin fin-num" id="fNum" inputmode="numeric" placeholder="?" readonly>
+        <div class="fin-bar"></div>
+        <input class="fin fin-den" id="fDen" inputmode="numeric" placeholder="?" readonly>
+      </div>
     </div>
     <div class="frac-hint" id="fracHint">Escribí la fracción ya simplificada.</div>
     <div class="explain hidden" id="explainF">
@@ -2227,10 +2244,11 @@
   // ================= MODO FRACCIONES =================
   const selFrac=new Set(['fsame']);
   let countF=10;
+  let fracMinN=2, fracMaxN=2;   // cantidad de fracciones por operación (2-6)
   const FRAC_DESC={
-    fsame:'Suma y resta con el mismo denominador. Sumás/restás numeradores y dejás el denominador igual. Simplificá el resultado.',
-    fdiff:'Suma y resta con distinto denominador. Buscás denominador común, ajustás numeradores y operás. Simplificá.',
-    fmix:'Números mixtos (entero + fracción). Convertís a fracción impropia, operás y simplificás. Podés responder como fracción impropia.'
+    fsame:'Suma y resta con el mismo denominador. Operás los numeradores y dejás el denominador igual. Simplificá; si queda impropia, respondé con número mixto.',
+    fdiff:'Suma y resta con distinto denominador. Buscás denominador común, ajustás numeradores y operás. Simplificá; si queda impropia, número mixto.',
+    fmix:'Números mixtos (entero + fracción). Convertís a impropia, operás y simplificás. Respondé con número mixto si el resultado es impropio.'
   };
   function renderFracDesc(){
     if(selFrac.size===1){ $('#fracDesc').textContent=FRAC_DESC[[...selFrac][0]]; }
@@ -2249,7 +2267,14 @@
   $('#plusF').onclick =()=>{countF=clamp(countF+1);countFInput.value=countF};
   countFInput.oninput=()=>{countF=clamp(parseInt(countFInput.value,10))};
   countFInput.onblur =()=>{countFInput.value=countF};
-  document.querySelectorAll('#setupFrac .quick button').forEach(b=>b.onclick=()=>{countF=clamp(parseInt(b.dataset.nf,10));countFInput.value=countF});
+  document.querySelectorAll('#setupFrac .quick button[data-nf]').forEach(b=>b.onclick=()=>{countF=clamp(parseInt(b.dataset.nf,10));countFInput.value=countF});
+  // selector de cantidad de fracciones por operación
+  $('#fracNPick').addEventListener('click',e=>{
+    const b=e.target.closest('button');if(!b)return;
+    fracMinN=parseInt(b.dataset.nmin,10);
+    fracMaxN=parseInt(b.dataset.nmax,10);
+    document.querySelectorAll('#fracNPick button').forEach(x=>x.classList.toggle('on',x===b));
+  });
 
   // ---------- utilidades de fracción ----------
   function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b];}return a||1;}
@@ -2262,79 +2287,134 @@
   function fracHTML(n,d){return `<span class="fracq"><span class="fn">${n}</span><span class="fd">${d}</span></span>`;}
   function mixedHTML(w,n,d){return `<span class="whole">${w}</span>${fracHTML(n,d)}`;}
 
-  // ---------- generadores de fracciones ----------
-  function makeFracSame(){
-    const d=rnd(2,12);
-    let a=rnd(1,d-1), b=rnd(1,d-1);
-    const plus=Math.random()<0.5;
-    if(!plus && b>a)[a,b]=[b,a];    // evitar resultado negativo en resta
-    const rn = plus ? a+b : a-b;
-    const [sn,sd]=reduceFrac(rn,d);
-    return {op:'fsame',cat:'fsame1',plus,a,b,d,
-      text:`${fracHTML(a,d)} ${plus?'+':'−'} ${fracHTML(b,d)}`,
-      ansN:sn,ansD:sd, raw:{n:rn,d}};
+  // ---------- utilidades de número mixto ----------
+  // convierte n/d (impropia o no) a {whole, num, den} ya reducido
+  function toMixed(n,d){
+    const [rn,rd]=reduceFrac(n,d);
+    const whole=Math.trunc(rn/rd);
+    const rem=Math.abs(rn%rd);
+    return {whole, num:rem, den:rd, improper:rn>=rd};
   }
-  function makeFracDiff(){
-    let d1=rnd(2,9), d2=rnd(2,9);
-    while(d2===d1) d2=rnd(2,9);
-    const a=rnd(1,d1-1), b=rnd(1,d2-1);
-    const plus=Math.random()<0.5;
-    const com=d1*d2/gcd(d1,d2);      // mcm
-    const na=a*(com/d1), nb=b*(com/d2);
-    let rn = plus ? na+nb : na-nb;
-    // evitar negativo en resta: si sale negativo, cambio a suma
-    let realPlus=plus;
-    if(!plus && rn<0){ realPlus=true; rn=na+nb; }
-    const [sn,sd]=reduceFrac(rn,com);
-    return {op:'fdiff',cat:'fdiff1',plus:realPlus,a,b,d1,d2,com,na,nb,
-      text:`${fracHTML(a,d1)} ${realPlus?'+':'−'} ${fracHTML(b,d2)}`,
-      ansN:sn,ansD:sd, raw:{n:rn,d:com}};
+  function isImproper(n,d){ const [rn,rd]=reduceFrac(n,d); return rn>=rd && rd!==1 ? rn>=rd : rn>=rd; }
+
+  // ---------- generadores de fracciones (N términos) ----------
+  // fSame: N fracciones con el MISMO denominador, cadena de + y −, resultado nunca negativo
+  function makeFracSame(nTerms){
+    const N=nTerms||2;
+    for(let attempt=0;attempt<300;attempt++){
+      const d=rnd(3,12);
+      const nums=[rnd(1,d-1)];
+      const signs=[];         // signo de cada término después del primero: +1 / -1
+      let acc=nums[0];
+      let okChain=true;
+      for(let i=1;i<N;i++){
+        const v=rnd(1,d-1);
+        // elegir signo sin que el acumulado quede negativo
+        let s = Math.random()<0.5?1:-1;
+        if(acc - v < 0) s=1;         // si restar da negativo, sumo
+        acc += s*v;
+        nums.push(v);signs.push(s);
+      }
+      if(acc<0){okChain=false;}
+      if(!okChain)continue;
+      const [sn,sd]=reduceFrac(acc,d);
+      let text=fracHTML(nums[0],d);
+      for(let i=1;i<N;i++) text+=` ${signs[i-1]>0?'+':'−'} ${fracHTML(nums[i],d)}`;
+      return {op:'fsame',cat:'fsame1',N,d,nums,signs,text,ansN:sn,ansD:sd};
+    }
+    // fallback 2 términos
+    return makeFracSame(2);
   }
-  function makeFracMix(){
-    // dos mixtos con denominadores iguales o distintos chicos
-    const w1=rnd(1,4), w2=rnd(1,4);
-    let d1=rnd(2,6), d2=rnd(2,6);
-    const a=rnd(1,d1-1), b=rnd(1,d2-1);
-    const plus=Math.random()<0.5;
-    // a impropia
-    const imp1n=w1*d1+a, imp2n=w2*d2+b;
-    const com=d1*d2/gcd(d1,d2);
-    const na=imp1n*(com/d1), nb=imp2n*(com/d2);
-    let realPlus=plus, rn = plus ? na+nb : na-nb;
-    if(!plus && rn<0){ realPlus=true; rn=na+nb; }
-    const [sn,sd]=reduceFrac(rn,com);
-    return {op:'fmix',cat:'fmix1',plus:realPlus,w1,a,d1,w2,b,d2,com,imp1n,imp2n,
-      text:`${mixedHTML(w1,a,d1)} ${realPlus?'+':'−'} ${mixedHTML(w2,b,d2)}`,
-      ansN:sn,ansD:sd, raw:{n:rn,d:com}};
+  // fDiff: N fracciones con DISTINTO denominador, denominador común, cadena +/−, nunca negativo
+  function makeFracDiff(nTerms){
+    const N=nTerms||2;
+    for(let attempt=0;attempt<400;attempt++){
+      const dens=[], nums=[];
+      for(let i=0;i<N;i++){ dens.push(rnd(2,9)); nums.push(rnd(1,dens[i]-1)); }
+      // denominador común = mcm de todos
+      let com=dens[0]; for(let i=1;i<N;i++) com=com*dens[i]/gcd(com,dens[i]);
+      const conv=nums.map((n,i)=>n*(com/dens[i]));   // numeradores con el común
+      const signs=[];let acc=conv[0];let okChain=true;
+      for(let i=1;i<N;i++){
+        let s=Math.random()<0.5?1:-1;
+        if(acc - conv[i] < 0) s=1;
+        acc += s*conv[i];
+        signs.push(s);
+      }
+      if(acc<0)continue;
+      const [sn,sd]=reduceFrac(acc,com);
+      let text=fracHTML(nums[0],dens[0]);
+      for(let i=1;i<N;i++) text+=` ${signs[i-1]>0?'+':'−'} ${fracHTML(nums[i],dens[i])}`;
+      return {op:'fdiff',cat:'fdiff1',N,dens,nums,conv,com,signs,text,ansN:sn,ansD:sd};
+    }
+    return makeFracDiff(2);
+  }
+  // fMix: N números mixtos, se convierten a impropias, común, cadena +/−, nunca negativo
+  function makeFracMix(nTerms){
+    const N=nTerms||2;
+    for(let attempt=0;attempt<400;attempt++){
+      const wholes=[],dens=[],nums=[],imps=[];
+      for(let i=0;i<N;i++){
+        const w=rnd(1,4), d=rnd(2,6), a=rnd(1,d-1);
+        wholes.push(w);dens.push(d);nums.push(a);imps.push(w*d+a);
+      }
+      let com=dens[0]; for(let i=1;i<N;i++) com=com*dens[i]/gcd(com,dens[i]);
+      const conv=imps.map((n,i)=>n*(com/dens[i]));
+      const signs=[];let acc=conv[0];
+      for(let i=1;i<N;i++){
+        let s=Math.random()<0.5?1:-1;
+        if(acc - conv[i] < 0) s=1;
+        acc += s*conv[i];
+        signs.push(s);
+      }
+      if(acc<0)continue;
+      const [sn,sd]=reduceFrac(acc,com);
+      let text=mixedHTML(wholes[0],nums[0],dens[0]);
+      for(let i=1;i<N;i++) text+=` ${signs[i-1]>0?'+':'−'} ${mixedHTML(wholes[i],nums[i],dens[i])}`;
+      return {op:'fmix',cat:'fmix1',N,wholes,dens,nums,imps,conv,com,signs,text,ansN:sn,ansD:sd};
+    }
+    return makeFracMix(2);
   }
   function makeProblemFrac(){
     const op=pick([...selFrac]);
-    if(op==='fsame')return makeFracSame();
-    if(op==='fdiff')return makeFracDiff();
-    return makeFracMix();
+    const N=rnd(fracMinN,fracMaxN);
+    if(op==='fsame')return makeFracSame(N);
+    if(op==='fdiff')return makeFracDiff(N);
+    return makeFracMix(N);
   }
 
   // ---------- explicaciones de fracciones ----------
+  function ansFinalTxt(p){
+    if(p.ansD===1) return `${p.ansN}`;
+    const [rn,rd]=[p.ansN,p.ansD];
+    if(rn>=rd){ const m=toMixed(rn,rd); return m.num===0?`${m.whole}`:`${m.whole} ${m.num}/${m.den}`; }
+    return `${p.ansN}/${p.ansD}`;
+  }
   function explainFrac(p){
-    const finalTxt = p.ansD===1 ? `${p.ansN}` : `${p.ansN}/${p.ansD}`;
+    const finalTxt=ansFinalTxt(p);
+    const sgn=i=>p.signs[i]>0?'+':'−';
     if(p.op==='fsame'){
-      const rn = p.plus ? p.a+p.b : p.a-p.b;
-      let s=`Mismo denominador (${p.d}): ${p.plus?'sumás':'restás'} los numeradores y dejás el ${p.d} abajo. ${p.a} ${p.plus?'+':'−'} ${p.b} = ${rn}, o sea ${rn}/${p.d}. `;
-      if(p.ansD!==p.d || p.ansN!==rn) s+=`Simplificás → <b>${finalTxt}</b>.`;
-      else s+=`→ <b>${finalTxt}</b>.`;
+      let chain=`${p.nums[0]}`;
+      for(let i=1;i<p.N;i++) chain+=` ${sgn(i-1)} ${p.nums[i]}`;
+      let s=`Mismo denominador (${p.d}): operás los numeradores y dejás el ${p.d} abajo. ${chain} = ${sumChain(p.nums,p.signs)}, o sea ${sumChain(p.nums,p.signs)}/${p.d}. Simplificás → <b>${finalTxt}</b>.`;
       return s;
     }
     if(p.op==='fdiff'){
-      let s=`Denominador común de ${p.d1} y ${p.d2} = ${p.com}. Reescribís: ${p.a}/${p.d1} = ${p.na}/${p.com} y ${p.b}/${p.d2} = ${p.nb}/${p.com}. `;
-      const rn = p.plus ? p.na+p.nb : p.na-p.nb;
-      s+=`Ahora mismo denominador: ${p.na} ${p.plus?'+':'−'} ${p.nb} = ${rn} → ${rn}/${p.com}. `;
-      s+=`Simplificás → <b>${finalTxt}</b>.`;
-      return s;
+      let reesc=p.nums.map((n,i)=>`${n}/${p.dens[i]} = ${p.conv[i]}/${p.com}`).join('; ');
+      let chain=`${p.conv[0]}`;
+      for(let i=1;i<p.N;i++) chain+=` ${sgn(i-1)} ${p.conv[i]}`;
+      return `Denominador común de ${p.dens.join(', ')} = ${p.com}. Reescribís: ${reesc}. Ahora operás: ${chain} = ${sumChain(p.conv,p.signs)} → ${sumChain(p.conv,p.signs)}/${p.com}. Simplificás → <b>${finalTxt}</b>.`;
     }
     // mixto
-    let s=`Convertís a impropias: ${p.w1} y ${p.a}/${p.d1} → (${p.w1}×${p.d1}+${p.a})/${p.d1} = ${p.imp1n}/${p.d1}; ${p.w2} y ${p.b}/${p.d2} → ${p.imp2n}/${p.d2}. `;
-    s+=`Común ${p.com}, operás los numeradores y simplificás → <b>${finalTxt}</b>.`;
-    return s;
+    let imp=p.wholes.map((w,i)=>`${w} y ${p.nums[i]}/${p.dens[i]} → ${p.imps[i]}/${p.dens[i]}`).join('; ');
+    let chain=`${p.conv[0]}`;
+    for(let i=1;i<p.N;i++) chain+=` ${sgn(i-1)} ${p.conv[i]}`;
+    return `Convertís a impropias: ${imp}. Común ${p.com}: ${chain} = ${sumChain(p.conv,p.signs)}. Simplificás y lo pasás a número mixto → <b>${finalTxt}</b>.`;
+  }
+  function sumChain(vals,signs){
+    let acc=vals[0];
+    for(let i=1;i<vals.length;i++) acc += signs[i-1]*vals[i];
+    return acc;
   }
 
   // ================= MOTOR FRACCIONES =================
@@ -2353,8 +2433,19 @@
     $('#qTextF').innerHTML=p.text;$('#qTextF').className='q';
     $('#progF').textContent=`${fIdx+1} / ${fProbs.length}`;
     $('#barFillF').style.width=(fIdx/fProbs.length*100)+'%';
-    $('#fNum').value='';$('#fDen').value='';
-    setFracActive('num');
+    $('#fWhole').value='';$('#fNum').value='';$('#fDen').value='';
+    // ¿la respuesta correcta es impropia? entonces se exige número mixto
+    p._mixed = p.ansN>=p.ansD && p.ansD!==1;
+    const wholeEl=$('#fWhole');
+    if(p._mixed){
+      wholeEl.classList.remove('hidden');
+      $('#fracHint').textContent='El resultado es impropio: respondé con número mixto (entero + fracción).';
+      setFracActive('whole');
+    }else{
+      wholeEl.classList.add('hidden');
+      $('#fracHint').textContent='Escribí la fracción ya simplificada.';
+      setFracActive('num');
+    }
     $('#explainF').classList.add('hidden');
     $('#padF').style.display='';
     updateLiveF();
@@ -2362,9 +2453,11 @@
   }
   function setFracActive(which){
     fActive=which;
+    $('#fWhole').classList.toggle('active',which==='whole');
     $('#fNum').classList.toggle('active',which==='num');
     $('#fDen').classList.toggle('active',which==='den');
   }
+  $('#fWhole').addEventListener('click',()=>setFracActive('whole'));
   $('#fNum').addEventListener('click',()=>setFracActive('num'));
   $('#fDen').addEventListener('click',()=>setFracActive('den'));
   function updateLiveF(){
@@ -2372,11 +2465,13 @@
     $('#liveF').innerHTML=`racha <b>${DATA.streak[cat]}</b> · ${DATA.total[cat]}/100`;
   }
   function fracPadPress(k){
-    const el = fActive==='num' ? $('#fNum') : $('#fDen');
+    const el = fActive==='whole' ? $('#fWhole') : fActive==='num' ? $('#fNum') : $('#fDen');
     if(k==='del'){ el.value=el.value.slice(0,-1); return; }
     if(k==='sign'){
-      if(fActive!=='num') return;          // el signo va arriba (numerador)
-      el.value = el.value.startsWith('-') ? el.value.slice(1) : '-'+el.value; return;
+      // el signo va en el entero si es mixto, si no en el numerador
+      const signEl = fProbs[fIdx]._mixed ? $('#fWhole') : $('#fNum');
+      if(el!==signEl){ setFracActive(fProbs[fIdx]._mixed?'whole':'num'); }
+      signEl.value = signEl.value.startsWith('-') ? signEl.value.slice(1) : '-'+signEl.value; return;
     }
     if(k==='go'){ submitFrac(); return; }
     el.value += k;
@@ -2387,17 +2482,34 @@
   });
   function submitFrac(){
     const p=fProbs[fIdx];
-    const numStr=$('#fNum').value, denStr=$('#fDen').value;
-    if(numStr===''||numStr==='-'){ $('#fNum').classList.add('bad');setTimeout(()=>$('#fNum').classList.remove('bad'),300);setFracActive('num');return; }
-    if(denStr===''||denStr==='-'||denStr==='0'){ $('#fDen').classList.add('bad');setTimeout(()=>$('#fDen').classList.remove('bad'),300);setFracActive('den');return; }
-    const un=parseInt(numStr,10), ud=parseInt(denStr,10);
-    // validación por equivalencia de fracción (reduzco lo que metió y comparo con la respuesta reducida)
-    const [rn,rd]=reduceFrac(un,ud);
-    const ok = (rn===p.ansN && rd===p.ansD);
+    const badFlash=el=>{el.classList.add('bad');setTimeout(()=>el.classList.remove('bad'),300);};
+    let ok, yourTxt;
+    if(p._mixed){
+      // se exige número mixto: entero + fracción propia
+      const wStr=$('#fWhole').value, numStr=$('#fNum').value, denStr=$('#fDen').value;
+      if(wStr===''||wStr==='-'){ badFlash($('#fWhole'));setFracActive('whole');return; }
+      if(numStr===''||numStr==='-'){ badFlash($('#fNum'));setFracActive('num');return; }
+      if(denStr===''||denStr==='-'||denStr==='0'){ badFlash($('#fDen'));setFracActive('den');return; }
+      const w=parseInt(wStr,10), un=parseInt(numStr,10), ud=parseInt(denStr,10);
+      yourTxt=`${w} ${un}/${ud}`;
+      // la fracción del mixto debe ser propia; se compara el valor total con la respuesta
+      const totalN = w*ud + (w<0?-un:un);   // valor total como fracción /ud
+      const [rn,rd]=reduceFrac(totalN,ud);
+      const propioOk = un<ud;               // exigir fracción propia en el mixto
+      ok = propioOk && rn===p.ansN && rd===p.ansD;
+    }else{
+      const numStr=$('#fNum').value, denStr=$('#fDen').value;
+      if(numStr===''||numStr==='-'){ badFlash($('#fNum'));setFracActive('num');return; }
+      if(denStr===''||denStr==='-'||denStr==='0'){ badFlash($('#fDen'));setFracActive('den');return; }
+      const un=parseInt(numStr,10), ud=parseInt(denStr,10);
+      yourTxt=`${un}/${ud}`;
+      const [rn,rd]=reduceFrac(un,ud);
+      ok = (rn===p.ansN && rd===p.ansD);
+    }
     const took=(performance.now()-fQStart)/1000;
     record(p.cat,ok);
-    const ansTxt = p.ansD===1?`${p.ansN}`:`${p.ansN}/${p.ansD}`;
-    fLog.push({text:p.text,your:`${un}/${ud}`,ans:ansTxt,ok,took});
+    const ansTxt=ansFinalTxt(p);
+    fLog.push({text:p.text,your:yourTxt,ans:ansTxt,ok,took});
     updateLiveF();
     if(ok){
       $('#qTextF').classList.add('flash-ok');
