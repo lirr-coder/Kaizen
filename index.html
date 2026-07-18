@@ -2384,6 +2384,38 @@
   }
 
   // ---------- explicaciones de fracciones ----------
+  // detecta pares que se cancelan (mismo valor absoluto, signos opuestos) en una cadena de fracciones
+  // frac[i] = {n, d, sign}  → devuelve texto del atajo si encuentra algo, o ''
+  function cancelHint(fracs){
+    // reduzco cada una a su forma mínima con su signo
+    const red=fracs.map(f=>{const [n,d]=reduceFrac(f.n,f.d);return {n:n*f.sign,d,key:`${n}/${d}`};});
+    const used=new Array(red.length).fill(false);
+    const pairs=[];
+    for(let i=0;i<red.length;i++){
+      if(used[i])continue;
+      for(let j=i+1;j<red.length;j++){
+        if(used[j])continue;
+        // se matan si tienen el mismo valor y signo opuesto
+        if(red[i].d===red[j].d && red[i].n===-red[j].n && red[i].n!==0){
+          used[i]=used[j]=true;
+          pairs.push(`${red[i].n<0?'':'+'}${red[i].n}/${red[i].d} y ${red[j].n<0?'':'+'}${red[j].n}/${red[j].d}`);
+          break;
+        }
+      }
+    }
+    if(!pairs.length)return '';
+    return `Atajo: reordenando (el orden no altera la suma), se cancelan ${pairs.join('; ')}. `;
+  }
+  // detecta si alguna fracción se puede simplificar antes de operar
+  function simplifyHint(fracs){
+    const parts=[];
+    fracs.forEach(f=>{
+      const [n,d]=reduceFrac(f.n,f.d);
+      if(d!==f.d && f.n!==0){ parts.push(`${f.sign<0?'−':''}${f.n}/${f.d} = ${f.sign<0?'−':''}${n}/${d}`); }
+    });
+    if(!parts.length)return '';
+    return `Simplificá primero: ${parts.join('; ')}. `;
+  }
   function ansFinalTxt(p){
     if(p.ansD===1) return `${p.ansN}`;
     const [rn,rd]=[p.ansN,p.ansD];
@@ -2394,16 +2426,21 @@
     const finalTxt=ansFinalTxt(p);
     const sgn=i=>p.signs[i]>0?'+':'−';
     if(p.op==='fsame'){
+      // fracciones con su signo para detectar simplificaciones/cancelaciones
+      const fracs=p.nums.map((n,i)=>({n,d:p.d,sign:i===0?1:p.signs[i-1]}));
+      let pre=simplifyHint(fracs)+cancelHint(fracs);
       let chain=`${p.nums[0]}`;
       for(let i=1;i<p.N;i++) chain+=` ${sgn(i-1)} ${p.nums[i]}`;
-      let s=`Mismo denominador (${p.d}): operás los numeradores y dejás el ${p.d} abajo. ${chain} = ${sumChain(p.nums,p.signs)}, o sea ${sumChain(p.nums,p.signs)}/${p.d}. Simplificás → <b>${finalTxt}</b>.`;
+      let s=`${pre}Mismo denominador (${p.d}): operás los numeradores y dejás el ${p.d} abajo. ${chain} = ${sumChain(p.nums,p.signs)}, o sea ${sumChain(p.nums,p.signs)}/${p.d}. Simplificás → <b>${finalTxt}</b>.`;
       return s;
     }
     if(p.op==='fdiff'){
+      const fracs=p.nums.map((n,i)=>({n,d:p.dens[i],sign:i===0?1:p.signs[i-1]}));
+      let pre=simplifyHint(fracs)+cancelHint(fracs);
       let reesc=p.nums.map((n,i)=>`${n}/${p.dens[i]} = ${p.conv[i]}/${p.com}`).join('; ');
       let chain=`${p.conv[0]}`;
       for(let i=1;i<p.N;i++) chain+=` ${sgn(i-1)} ${p.conv[i]}`;
-      return `Denominador común de ${p.dens.join(', ')} = ${p.com}. Reescribís: ${reesc}. Ahora operás: ${chain} = ${sumChain(p.conv,p.signs)} → ${sumChain(p.conv,p.signs)}/${p.com}. Simplificás → <b>${finalTxt}</b>.`;
+      return `${pre}Denominador común de ${p.dens.join(', ')} = ${p.com}. Reescribís: ${reesc}. Operás: ${chain} = ${sumChain(p.conv,p.signs)} → ${sumChain(p.conv,p.signs)}/${p.com}. Simplificás → <b>${finalTxt}</b>.`;
     }
     // mixto
     let imp=p.wholes.map((w,i)=>`${w} y ${p.nums[i]}/${p.dens[i]} → ${p.imps[i]}/${p.dens[i]}`).join('; ');
@@ -2752,7 +2789,9 @@
     {t:'Suma/resta con distinto denominador',b:'Buscás un denominador común (el mcm sirve, o multiplicar los dos denominadores). Reescribís cada fracción con ese denominador y ahí sí sumás/restás numeradores. <span class="ex">1/2 + 1/3 → común 6 → 3/6 + 2/6 = 5/6</span>'},
     {t:'Denominador común rápido',b:'Si no ves el mcm, multiplicá cruzado: a/b ± c/d = (a·d ± c·b) / (b·d). Da común seguro, aunque a veces haya que simplificar más al final. <span class="ex">1/4 + 1/6 = (6+4)/24 = 10/24 = 5/12</span>'},
     {t:'Números mixtos',b:'Un mixto (1½) es entero + fracción. Para operar convertís a fracción impropia: entero × denominador + numerador, sobre el mismo denominador. <span class="ex">1½ = (1×2+1)/2 = 3/2</span>. Después operás normal.'},
-    {t:'Simplificar',b:'Dividís numerador y denominador por el mismo número hasta que no tengan factor común. <span class="ex">6/8 → ÷2 → 3/4</span>. El resultado final siempre va simplificado.'}
+    {t:'Simplificar',b:'Dividís numerador y denominador por el mismo número hasta que no tengan factor común. <span class="ex">6/8 → ÷2 → 3/4</span>. El resultado final siempre va simplificado.'},
+    {t:'Estrategia para cadenas largas',b:'Cuando hay varias fracciones sumando y restando, seguí este orden: <b>1)</b> simplificá cada fracción primero (bajala a números chicos); <b>2)</b> reordená y cancelá lo que se mata; <b>3)</b> resolvé el resto. En suma y resta el orden no altera el resultado (propiedad conmutativa), así que podés reacomodar libre.'},
+    {t:'Cancelar lo que se mata',b:'Si al simplificar te quedan dos fracciones iguales con signo opuesto, se eliminan entre sí. <span class="ex">3/5 − 3/6 + 1/6 − 6/10 → simplificá −6/10 = −3/5 → +3/5 y −3/5 se matan → queda −3/6 + 1/6 = −2/6 = −1/3</span>. Ojo: esto vale porque son puras sumas y restas; si hubiera multiplicación mezclada, mandaría la jerarquía y no podrías reordenar.'}
   ];
   const FORMULAS_LANG=[
     {t:'Artículo — qué es',b:'Va antes del sustantivo para presentarlo. No tiene significado propio, solo acompaña. <span class="ex">el, la, un, una</span>'},
