@@ -386,6 +386,8 @@
         <div class="op on" data-op="fsame"><span class="sym">a/n ± b/n</span><span class="lbl">Mismo denom.</span></div>
         <div class="op" data-op="fdiff"><span class="sym">a/m ± b/n</span><span class="lbl">Distinto denom.</span></div>
         <div class="op" data-op="fmix"><span class="sym">1½ ± ⅔</span><span class="lbl">Mixto</span></div>
+        <div class="op" data-op="fmul"><span class="sym">a/b × c/d</span><span class="lbl">Multiplicación</span></div>
+        <div class="op" data-op="fdiv"><span class="sym">a/b ÷ c/d</span><span class="lbl">División</span></div>
       </div>
       <div class="game-desc" id="fracDesc"></div>
       <div class="field">
@@ -609,14 +611,14 @@
   let subject='root'; // 'root' | 'math' | 'lang' — contexto para Progreso/Fórmulas
 
   // ---------- constantes ----------
-  const SYM={add:'+',sub:'−',mul:'×',div:'÷',pct:'%',nadd:'+',nsub:'−',nmul:'×',ndiv:'÷',nchain:'( )',nchainmd:'×÷',nchainmix:'±×',nchainabs:'|±|',howq:'−a',fsame:'a/n',fdiff:'a/m',fmix:'1½'};
-  const NAME={add:'Suma',sub:'Resta',mul:'Mult',div:'División',pct:'Porcentaje',nadd:'Suma −',nsub:'Resta −',nmul:'Mult −',ndiv:'Div −',nchain:'Cadena +−',nchainmd:'Cadena ×÷',nchainmix:'Cadena mixta',nchainabs:'Mixta+abs',howq:'¿Cómo queda?',fsame:'Frac mismo den',fdiff:'Frac distinto den',fmix:'Frac mixto'};
+  const SYM={add:'+',sub:'−',mul:'×',div:'÷',pct:'%',nadd:'+',nsub:'−',nmul:'×',ndiv:'÷',nchain:'( )',nchainmd:'×÷',nchainmix:'±×',nchainabs:'|±|',howq:'−a',fsame:'a/n',fdiff:'a/m',fmix:'1½',fmul:'×',fdiv:'÷'};
+  const NAME={add:'Suma',sub:'Resta',mul:'Mult',div:'División',pct:'Porcentaje',nadd:'Suma −',nsub:'Resta −',nmul:'Mult −',ndiv:'Div −',nchain:'Cadena +−',nchainmd:'Cadena ×÷',nchainmix:'Cadena mixta',nchainabs:'Mixta+abs',howq:'¿Cómo queda?',fsame:'Frac mismo den',fdiff:'Frac distinto den',fmix:'Frac mixto',fmul:'Frac mult',fdiv:'Frac división'};
   // categorías mentales
   const CATS_MENTAL=['add1','add2','add3','sub1','sub2','sub3','mul1','mul2','mul3','div1','div2','div3','pct1','pct2','howq1'];
   // categorías negativos
   const CATS_NEG=['nadd1','nadd2','nadd3','nsub1','nsub2','nsub3','nmul1','nmul2','ndiv1','ndiv2','nchain3','nchain4','nchain5','nchainmd3','nchainmd4','nchainmd5','nchainmix3','nchainmix4','nchainmix5','nchainabs3','nchainabs4','nchainabs5'];
   // categorías fracciones (suma y resta)
-  const CATS_FRAC=['fsame1','fdiff1','fmix1'];
+  const CATS_FRAC=['fsame1','fdiff1','fmix1','fmul1','fdiv1'];
   // (CATS se define más abajo, tras las categorías de lengua)
   const CAT_INFO={
     add1:{op:'add',label:'0–99'},   add2:{op:'add',label:'100–499'}, add3:{op:'add',label:'500–999'},
@@ -633,7 +635,8 @@
     nchainmd3:{op:'nchainmd',label:'3 térm'},nchainmd4:{op:'nchainmd',label:'4 térm'},nchainmd5:{op:'nchainmd',label:'5 térm'},
     nchainmix3:{op:'nchainmix',label:'3 térm'},nchainmix4:{op:'nchainmix',label:'4 térm'},nchainmix5:{op:'nchainmix',label:'5 térm'},
     nchainabs3:{op:'nchainabs',label:'3 térm'},nchainabs4:{op:'nchainabs',label:'4 térm'},nchainabs5:{op:'nchainabs',label:'5 térm'},
-    fsame1:{op:'fsame',label:'mismo den'},fdiff1:{op:'fdiff',label:'distinto den'},fmix1:{op:'fmix',label:'mixto'}
+    fsame1:{op:'fsame',label:'mismo den'},fdiff1:{op:'fdiff',label:'distinto den'},fmix1:{op:'fmix',label:'mixto'},
+    fmul1:{op:'fmul',label:'multiplicación'},fdiv1:{op:'fdiv',label:'división'}
   };
   const OPS_MENTAL=['add','sub','mul','div','pct','howq'];
   const OPS_NEG=['nadd','nsub','nmul','ndiv','nchain','nchainmd','nchainmix','nchainabs'];
@@ -668,7 +671,7 @@
   const CATS=[...CATS_MENTAL,...CATS_NEG,...CATS_FRAC,...CATS_LANG];
   function catOf(op,val){return op+val;}
 
-  const KEY='practicaMental_v14';
+  const KEY='practicaMental_v15';
   function blankCats(){const o={};CATS.forEach(c=>o[c]=0);return o;}
   function blankData(){return {streak:blankCats(),best:blankCats(),total:blankCats(),days:{}};}
   function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(!d||!d.streak)return blankData();
@@ -2340,7 +2343,9 @@
   const FRAC_DESC={
     fsame:'Suma y resta con el mismo denominador. Operás los numeradores y dejás el denominador igual. Simplificá; si queda impropia, respondé con número mixto.',
     fdiff:'Suma y resta con distinto denominador. Buscás denominador común, ajustás numeradores y operás. Simplificá; si queda impropia, número mixto.',
-    fmix:'Números mixtos (entero + fracción). Convertís a impropia, operás y simplificás. Respondé con número mixto si el resultado es impropio.'
+    fmix:'Números mixtos (entero + fracción). Convertís a impropia, operás y simplificás. Respondé con número mixto si el resultado es impropio.',
+    fmul:'Multiplicación de dos fracciones. Multiplicás numerador por numerador y denominador por denominador. Podés simplificar en cruz antes. Si queda impropia, número mixto.',
+    fdiv:'División de dos fracciones. Multiplicás la primera por la segunda invertida (voltear la de la derecha). Simplificá; si queda impropia, número mixto.'
   };
   function renderFracDesc(){
     if(selFrac.size===1){ $('#fracDesc').textContent=FRAC_DESC[[...selFrac][0]]; }
@@ -2467,8 +2472,36 @@
     }
     return makeFracMix(2);
   }
+  // fMul: dos fracciones simples multiplicadas. num×num / den×den, luego simplificar.
+  function makeFracMul(){
+    for(let attempt=0;attempt<200;attempt++){
+      const a=rnd(1,9), b=rnd(2,9), c=rnd(1,9), d=rnd(2,9);
+      if(a===b||c===d)continue;              // evitar fracciones que valen 1 (4/4)
+      const rn=a*c, rd=b*d;
+      const [sn,sd]=reduceFrac(rn,rd);
+      if(sd===0)continue;
+      return {op:'fmul',cat:'fmul1',a,b,c,d,rn,rd,
+        text:`${fracHTML(a,b)} × ${fracHTML(c,d)}`, ansN:sn,ansD:sd};
+    }
+    return makeFracMul();
+  }
+  // fDiv: dos fracciones simples divididas. a/b ÷ c/d = a/b × d/c.
+  function makeFracDiv(){
+    for(let attempt=0;attempt<200;attempt++){
+      const a=rnd(1,9), b=rnd(2,9), c=rnd(1,9), d=rnd(2,9);
+      if(a===b||c===d)continue;              // evitar fracciones que valen 1
+      const rn=a*d, rd=b*c;
+      const [sn,sd]=reduceFrac(rn,rd);
+      if(sd===0)continue;
+      return {op:'fdiv',cat:'fdiv1',a,b,c,d,rn,rd,
+        text:`${fracHTML(a,b)} ÷ ${fracHTML(c,d)}`, ansN:sn,ansD:sd};
+    }
+    return makeFracDiv();
+  }
   function makeProblemFrac(){
     const op=pick([...selFrac]);
+    if(op==='fmul')return makeFracMul();
+    if(op==='fdiv')return makeFracDiv();
     const N=rnd(fracMinN,fracMaxN);
     if(op==='fsame')return makeFracSame(N);
     if(op==='fdiff')return makeFracDiff(N);
@@ -2516,6 +2549,12 @@
   }
   function explainFrac(p){
     const finalTxt=ansFinalTxt(p);
+    if(p.op==='fmul'){
+      return `Multiplicás derecho: numerador por numerador y denominador por denominador. ${p.a}×${p.c} = ${p.rn} arriba, ${p.b}×${p.d} = ${p.rd} abajo → ${p.rn}/${p.rd}. Simplificás → <b>${finalTxt}</b>. (Atajo: podés cancelar en cruz antes de multiplicar, un numerador con el otro denominador si comparten factor.)`;
+    }
+    if(p.op==='fdiv'){
+      return `Dividir es multiplicar por la invertida: volteás la segunda fracción. ${p.a}/${p.b} ÷ ${p.c}/${p.d} = ${p.a}/${p.b} × ${p.d}/${p.c}. Multiplicás: ${p.a}×${p.d} = ${p.rn} arriba, ${p.b}×${p.c} = ${p.rd} abajo → ${p.rn}/${p.rd}. Simplificás → <b>${finalTxt}</b>.`;
+    }
     const sgn=i=>p.signs[i]>0?'+':'−';
     if(p.op==='fsame'){
       // fracciones con su signo para detectar simplificaciones/cancelaciones
@@ -2883,7 +2922,9 @@
     {t:'Números mixtos',b:'Un mixto (1½) es entero + fracción. Para operar convertís a fracción impropia: entero × denominador + numerador, sobre el mismo denominador. <span class="ex">1½ = (1×2+1)/2 = 3/2</span>. Después operás normal.'},
     {t:'Simplificar',b:'Dividís numerador y denominador por el mismo número hasta que no tengan factor común. <span class="ex">6/8 → ÷2 → 3/4</span>. El resultado final siempre va simplificado.'},
     {t:'Estrategia para cadenas largas',b:'Cuando hay varias fracciones sumando y restando, seguí este orden: <b>1)</b> simplificá cada fracción primero (bajala a números chicos); <b>2)</b> reordená y cancelá lo que se mata; <b>3)</b> resolvé el resto. En suma y resta el orden no altera el resultado (propiedad conmutativa), así que podés reacomodar libre.'},
-    {t:'Cancelar lo que se mata',b:'Si al simplificar te quedan dos fracciones iguales con signo opuesto, se eliminan entre sí. <span class="ex">3/5 − 3/6 + 1/6 − 6/10 → simplificá −6/10 = −3/5 → +3/5 y −3/5 se matan → queda −3/6 + 1/6 = −2/6 = −1/3</span>. Ojo: esto vale porque son puras sumas y restas; si hubiera multiplicación mezclada, mandaría la jerarquía y no podrías reordenar.'}
+    {t:'Cancelar lo que se mata',b:'Si al simplificar te quedan dos fracciones iguales con signo opuesto, se eliminan entre sí. <span class="ex">3/5 − 3/6 + 1/6 − 6/10 → simplificá −6/10 = −3/5 → +3/5 y −3/5 se matan → queda −3/6 + 1/6 = −2/6 = −1/3</span>. Ojo: esto vale porque son puras sumas y restas; si hubiera multiplicación mezclada, mandaría la jerarquía y no podrías reordenar.'},
+    {t:'Multiplicar fracciones',b:'Se multiplica derecho: numerador por numerador, denominador por denominador. No hace falta denominador común. <span class="ex">2/3 × 4/5 = (2×4)/(3×5) = 8/15</span>. Atajo: cancelá en cruz antes de multiplicar (un numerador con el otro denominador si comparten factor). <span class="ex">2/3 × 3/4 → el 3 de arriba con el 3 de abajo se cancelan → 2/1 × 1/4 = 2/4 = 1/2</span>'},
+    {t:'Dividir fracciones',b:'Dividir es multiplicar por la invertida: volteás la segunda fracción (numerador abajo, denominador arriba) y multiplicás. <span class="ex">2/3 ÷ 4/5 = 2/3 × 5/4 = 10/12 = 5/6</span>. Truco corto: "la de arriba se queda, la de abajo se voltea".'}
   ];
   const FORMULAS_LANG=[
     {t:'Artículo — qué es',b:'Va antes del sustantivo para presentarlo. No tiene significado propio, solo acompaña. <span class="ex">el, la, un, una</span>'},
